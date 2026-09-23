@@ -19,6 +19,10 @@ web UI that reads/writes the same stacks.
 ├── jellyfin/                 # media server (adopted from CasaOS)
 │   ├── compose.yaml
 │   └── .env                  # OPENAI_API_KEY (gitignored, mode 0600)
+├── downloads/                # *arr acquisition stack + Gluetun VPN
+│   ├── compose.yaml
+│   ├── .env                  # VPN credentials (gitignored)
+│   └── config/               # per-app state (gitignored)
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -306,11 +310,18 @@ Cockpit and Dockge stay bound to the LAN **and loopback only**. `tailscale
 serve` forwards tailnet traffic to loopback, so nothing new is exposed on the
 LAN or the public Internet:
 
-| Service  | Tailnet URL |
-|----------|-------------|
-| Cockpit  | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
-| Dockge   | `http://<node>.<tailnet>.ts.net:5001` |
-| Jellyfin | `http://<node>.<tailnet>.ts.net:8096` |
+| Service     | Tailnet URL |
+|-------------|-------------|
+| Cockpit     | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
+| Dockge      | `http://<node>.<tailnet>.ts.net:5001` |
+| Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
+| Jellyseerr  | `http://<node>.<tailnet>.ts.net:5055` |
+| Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
+| Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
+| Radarr      | `http://<node>.<tailnet>.ts.net:7878` |
+| Bazarr      | `http://<node>.<tailnet>.ts.net:6767` |
+| qBittorrent | `http://<node>.<tailnet>.ts.net:8080` |
+| SABnzbd     | `http://<node>.<tailnet>.ts.net:8081` |
 
 `tailscale-serve.service` waits for login and applies the config
 automatically. To re-apply manually:
@@ -447,6 +458,63 @@ findmnt /mnt/media
 df -h /mnt/media
 sudo findmnt --verify --verbose   # validate fstab
 ```
+
+## Downloads / *arr stack
+
+The "click to request, and it lands in the right folder" flow:
+
+    Jellyseerr -> Prowlarr -> Sonarr / Radarr -> qBittorrent (via Gluetun VPN)
+                                              \-> SABnzbd (Usenet)
+    Bazarr -> subtitles
+
+- Stack: `/opt/stacks/downloads/compose.yaml`
+- Secrets: `/opt/stacks/downloads/.env` (VPN credentials, gitignored)
+- State: `/opt/stacks/downloads/config/<app>` (gitignored)
+- All apps mount the 18TB disk at `/data` (same filesystem as the libraries, so
+  Sonarr/Radarr **hardlink** imports instead of copying).
+
+| App         | Purpose                   | Host port | Tailnet URL |
+|-------------|---------------------------|-----------|-------------|
+| Jellyseerr  | Request UI ("click")      | 5055      | `http://<node>.<tailnet>.ts.net:5055` |
+| Prowlarr    | Indexer manager           | 9696      | `...:9696` |
+| Sonarr      | TV automation             | 8989      | `...:8989` |
+| Radarr      | Movies automation         | 7878      | `...:7878` |
+| Bazarr      | Subtitles                 | 6767      | `...:6767` |
+| qBittorrent | Torrents (behind Gluetun) | 8080      | `...:8080` |
+| SABnzbd     | Usenet                    | 8081      | `...:8081` |
+
+### VPN (Gluetun) — required
+
+qBittorrent shares Gluetun's network namespace, so its traffic can only leave
+through the VPN (kill switch). Edit `/opt/stacks/downloads/.env`, set your
+provider and credentials (see
+<https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers>), then:
+
+```bash
+sudo docker compose -f /opt/stacks/downloads/compose.yaml up -d
+```
+
+Until then, `gluetun` and `qbittorrent` stay stopped; all other apps run.
+
+### Folder mapping
+
+- Downloads: `/data/Downloads/...` = `/mnt/media/Downloads/...`
+- Sonarr root folder: `/data/TV Shows` = `/mnt/media/TV Shows`
+- Radarr root folder: `/data/Movies` = `/mnt/media/Movies`
+- Inside the stack, qBittorrent is at host `gluetun:8080`; SABnzbd at `sabnzbd:8080`.
+
+### One-time setup order
+
+1. Complete the Jellyfin setup wizard, then create an API key.
+2. **Prowlarr**: add indexers, then Settings -> Apps -> add Sonarr & Radarr.
+3. **qBittorrent** (after the VPN is up): set the admin password.
+4. **Sonarr**: add root folder `/data/TV Shows`; add qBittorrent (host `gluetun`,
+   port `8080`) as a download client.
+5. **Radarr**: root folder `/data/Movies`; add qBittorrent.
+6. **SABnzbd**: add your Usenet server; add it as a download client in Sonarr/Radarr.
+7. **Bazarr**: add languages + subtitle providers; connect Sonarr/Radarr.
+8. **Jellyseerr**: sign in with Jellyfin, connect Sonarr/Radarr.
+9. In Jellyfin, scan libraries so imported media appears.
 
 ## Backups
 

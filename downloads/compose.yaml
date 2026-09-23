@@ -1,0 +1,150 @@
+# Media acquisition stack
+#
+#   Jellyseerr (click to request)
+#        -> Prowlarr (indexers)
+#        -> Sonarr / Radarr (search + import)
+#        -> qBittorrent (torrents, behind Gluetun VPN) and SABnzbd (Usenet)
+#   Bazarr (subtitles)
+#
+# All config lives in ./config (gitignored). Media and downloads live on the
+# 18TB disk mounted at /mnt/media, exposed to every app as /data so that
+# Sonarr/Radarr can HARDLINK imports (same filesystem) instead of copying.
+#
+# VPN: qBittorrent shares Gluetun's network namespace. Fill in ./.env before
+# starting, then: sudo docker compose -f /opt/stacks/downloads/compose.yaml up -d
+#
+# Ports are bound to the LAN address + loopback only; remote access is via
+# `tailscale serve`. See /opt/stacks/README.md.
+name: downloads
+
+x-arr: &arr
+  restart: unless-stopped
+  environment:
+    - PUID=1000
+    - PGID=1000
+    - TZ=Europe/Rome
+
+services:
+  # --- VPN gateway (kill switch for qBittorrent) ---
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # qBittorrent Web UI is published here because qBittorrent shares
+      # Gluetun's network namespace.
+      - "192.168.1.70:8080:8080"
+      - "127.0.0.1:8080:8080"
+    environment:
+      - TZ=Europe/Rome
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - VPN_TYPE=${VPN_TYPE:-wireguard}
+      # WireGuard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      # OpenVPN (only needed if VPN_TYPE=openvpn)
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      # Optional server selection
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      # Allow the Web UI through the firewall; allow torrent port from the VPN
+      - FIREWALL_INPUT_PORTS=8080
+      - FIREWALL_VPN_INPUT_PORTS=6881
+    volumes:
+      - ./config/gluetun:/gluetun
+
+  # --- Torrent client (traffic only leaves via Gluetun) ---
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
+    volumes:
+      - ./config/qbittorrent:/config
+      - /mnt/media:/data
+
+  # --- Usenet client (TLS to provider, runs on the normal network) ---
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    <<: *arr
+    ports:
+      - "192.168.1.70:8081:8080"
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./config/sabnzbd:/config
+      - /mnt/media:/data
+
+  # --- Indexer manager ---
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    <<: *arr
+    ports:
+      - "192.168.1.70:9696:9696"
+      - "127.0.0.1:9696:9696"
+    volumes:
+      - ./config/prowlarr:/config
+
+  # --- TV automation ---
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    <<: *arr
+    ports:
+      - "192.168.1.70:8989:8989"
+      - "127.0.0.1:8989:8989"
+    volumes:
+      - ./config/sonarr:/config
+      - /mnt/media:/data
+
+  # --- Movie automation ---
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    <<: *arr
+    ports:
+      - "192.168.1.70:7878:7878"
+      - "127.0.0.1:7878:7878"
+    volumes:
+      - ./config/radarr:/config
+      - /mnt/media:/data
+
+  # --- Subtitles ---
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    <<: *arr
+    ports:
+      - "192.168.1.70:6767:6767"
+      - "127.0.0.1:6767:6767"
+    volumes:
+      - ./config/bazarr:/config
+      - /mnt/media:/data
+
+  # --- Request front-end (the "click" UI) ---
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+    ports:
+      - "192.168.1.70:5055:5055"
+      - "127.0.0.1:5055:5055"
+    volumes:
+      - ./config/jellyseerr:/app/config
