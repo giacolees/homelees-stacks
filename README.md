@@ -277,6 +277,83 @@ For a trusted certificate, put Cockpit behind the existing Apache reverse proxy
 or install a real certificate. Note: Cockpit does **not** ship a Docker module
 in Debian; Docker Compose management is done with the CLI and Dockge.
 
+## Tailscale (remote access VPN)
+
+Tailscale is installed as a system service (`tailscaled`) from the official
+Debian repo. It gives the server a private WireGuard-based address on your
+tailnet so you can reach it from anywhere without opening router ports.
+
+- CLI: `tailscale`
+- Daemon: `tailscaled.service` (enabled)
+- Status: `sudo tailscale status`
+
+### First-time login (manual, one-off)
+
+```bash
+sudo tailscale up --ssh --accept-dns=false
+```
+
+Open the printed URL and authenticate. `--ssh` enables Tailscale SSH (log in
+from any of your tailnet devices with your tailnet identity; the normal sshd
+on port 22 is unchanged). `--accept-dns=false` leaves the server's own DNS
+alone.
+
+### Remote access to the web UIs
+
+Cockpit and Dockge stay bound to the LAN **and loopback only**. `tailscale
+serve` forwards tailnet traffic to loopback, so nothing new is exposed on the
+LAN or the public Internet:
+
+| Service | Tailnet URL |
+|---------|-------------|
+| Cockpit | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
+| Dockge  | `http://<node>.<tailnet>.ts.net:5001` |
+
+`tailscale-serve.service` waits for login and applies the config
+automatically. To re-apply manually:
+
+```bash
+sudo /usr/local/sbin/tailscale-remote-access.sh
+sudo tailscale serve status
+```
+
+### Firewall interaction
+
+`/usr/local/sbin/cockpit-firewall.sh` now allows the `tailscale0` interface and
+loopback in addition to `192.168.1.0/24`; everything else to tcp/9090 is
+dropped (chain `COCKPIT-FW`). Docker-published ports (Dockge) are **not**
+reachable directly over Tailscale — only through `tailscale serve`.
+
+### Optional: reach the whole LAN
+
+To let tailnet devices reach other LAN hosts (not just this server), enable IP
+forwarding and advertise the subnet, then approve the route in the Tailscale
+admin console:
+
+```bash
+echo 'net.ipv4.ip_forward = 1' | sudo tee /etc/sysctl.d/99-tailscale.conf
+sudo sysctl --system
+sudo tailscale set --advertise-routes=192.168.1.0/24
+```
+
+### Lifecycle / updates
+
+```bash
+sudo tailscale status
+sudo tailscale netcheck
+sudo apt-get update && sudo apt-get install --only-upgrade tailscale
+sudo tailscale logout        # disconnect (also revoke in the admin console)
+```
+
+### Security notes
+
+- Tailscale traffic is end-to-end encrypted (WireGuard) and authenticated by
+  your identity provider.
+- The server's public SSH (port 22) is unchanged; consider restricting it to
+  the LAN/tailnet later if you want.
+- Tailscale is a third-party control plane (free tier). For full self-hosting,
+  the same role can be filled by WireGuard or Headscale.
+
 ## Backups
 
 Back up `/opt/stacks` (git remote or archive) and each app's data directory
