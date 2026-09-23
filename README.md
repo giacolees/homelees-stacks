@@ -363,7 +363,8 @@ Adopted from the orphaned CasaOS container into a managed stack.
 
 - Stack: `/opt/stacks/jellyfin/compose.yaml`
 - Image: `linuxserver/jellyfin:12.1ubu2604-ls50` (version-pinned)
-- Config/data: `/DATA/AppData/jellyfin/{config,data}` (outside git)
+- Config: `/DATA/AppData/jellyfin/config` (outside git)
+- Media: `/mnt/media` (the 18TB disk) mounted into the container at `/media`
 - Secret: `/opt/stacks/jellyfin/.env` (`OPENAI_API_KEY`, gitignored, mode 0600)
 - Ports: bound to `192.168.1.70` + `127.0.0.1` only; DLNA on the LAN address.
   Remote access is via `tailscale serve` -> `tcp/8096` -> `127.0.0.1:8096`.
@@ -386,10 +387,45 @@ the setup wizard.
 
 ### Media library
 
-The stack mounts `/DATA/AppData/jellyfin/data/{movies,tvshows}`. If your media
-lives in `/DATA/Media`, uncomment the `/DATA/Media:/media` volume in
-`compose.yaml` and add libraries under `/media/Movies`, `/media/Music`,
-`/media/TV Shows`.
+Media lives on the 18TB disk, stably mounted at `/mnt/media` and bind-mounted
+into the container as `/media`. Create Jellyfin libraries pointing at:
+
+| Library   | Container path       |
+|-----------|----------------------|
+| Movies    | `/media/Movies`      |
+| TV Shows  | `/media/TV Shows`    |
+| Music     | `/media/Music`       |
+| Books     | `/media/Books`       |
+
+Files must be readable/writable by UID/GID `1000` (the disk is `chown`ed to
+`1000:1000`, matching Jellyfin's `PUID`/`PGID`).
+
+## Storage — 18TB media disk
+
+The Seagate One Touch Hub USB disk (`/dev/sda`, 16.4 TiB, ext4) is mounted at
+`/mnt/media` by UUID from `/etc/fstab`:
+
+```
+UUID=215cb891-4aea-4712-9346-05a226bc0fc6 /mnt/media ext4 defaults,nofail,noatime,nosuid,nodev,x-systemd.device-timeout=10 0 2
+```
+
+- `nofail` + `x-systemd.device-timeout=10`: boot does not hang or fail if the
+  USB disk is unplugged.
+- The disk is owned by `1000:1000` so Jellyfin (and the `giacolees` user) can
+  read and write media.
+- The previous `devmon` automount path
+  (`/media/devmon/sda1-usb-Seagate_One_Touc`) is unstable and is **no longer
+  used**. `devmon@devmon.service` is currently disabled; if you ever re-enable
+  it, add `--ignore-device /dev/sda1` (or set a filesystem label and
+  `--ignore-label`) to `/etc/conf.d/devmon` to avoid it grabbing the disk.
+
+Check the mount and free space:
+
+```bash
+findmnt /mnt/media
+df -h /mnt/media
+sudo findmnt --verify --verbose   # validate fstab
+```
 
 ## Backups
 

@@ -25,10 +25,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - /DATA/AppData/jellyfin/config:/config
-      - /DATA/AppData/jellyfin/data/movies:/data/movies
-      - /DATA/AppData/jellyfin/data/tvshows:/data/tvshows
-      # Your media library (currently empty). Uncomment to expose it to Jellyfin:
-      # - /DATA/Media:/media
+      # 18TB media disk, stably mounted at /mnt/media via /etc/fstab (UUID)
+      - /mnt/media:/media
     ports:
       # Web UI (LAN + loopback for tailscale serve)
       - "192.168.1.70:8096:8096"
