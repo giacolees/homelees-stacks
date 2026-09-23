@@ -27,3 +27,12 @@ known_hosts
 .DS_Store
 *.swp
 *~
+
+# Homepage config: track only the files we author, not runtime output
+!homepage/config/
+homepage/config/*
+!homepage/config/services.yaml
+!homepage/config/settings.yaml
+!homepage/config/widgets.yaml
+!homepage/config/bookmarks.yaml
+!homepage/config/docker.yaml

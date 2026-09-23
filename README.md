@@ -23,6 +23,9 @@ web UI that reads/writes the same stacks.
 │   ├── compose.yaml
 │   ├── .env                  # VPN credentials (gitignored)
 │   └── config/               # per-app state (gitignored)
+├── homepage/                 # dashboard (links to every app)
+│   ├── compose.yaml
+│   └── config/               # services.yaml, settings.yaml, widgets.yaml
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -196,6 +199,33 @@ git commit -m "add <app> stack"
 
 ---
 
+## Homepage (dashboard)
+
+One page listing every app — no need to remember IP:port. Config is YAML under
+`/opt/stacks/homepage/config` (tracked in git; no secrets).
+
+- URL (LAN): http://192.168.1.70:3000
+- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:3000
+- Stack: `/opt/stacks/homepage/compose.yaml`
+
+All card links use `HOMEPAGE_VAR_HOST` (set in `compose.yaml`), currently the
+Tailscale MagicDNS name so they work from anywhere. To use LAN-IP links instead,
+set `HOMEPAGE_VAR_HOST=192.168.1.70` and restart the stack.
+
+Add/edit apps in `config/services.yaml`; layout/groups in `config/settings.yaml`.
+Homepage runs **without** the Docker socket (links only), to avoid exposing
+root-equivalent access through an unauthenticated UI. To add live widgets
+(Jellyfin/Sonarr/Radarr/qBittorrent/SABnzbd/Prowlarr/Bazarr), add the relevant
+`widget:` block with an API key — the apps must be configured first.
+
+```bash
+cd /opt/stacks/homepage
+sudo docker compose config
+sudo docker compose up -d
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
+
 ## Dockge (optional web UI)
 
 - URL: **http://192.168.1.70:5001**
@@ -213,15 +243,15 @@ The UI is **not exposed to the public Internet**:
    ```
 2. Docker published ports **bypass the host INPUT chain**, so a `DOCKER-USER`
    rule drops tcp/5001 from any source outside `192.168.1.0/24`. This also
-   protects against router port-forwarding. Managed by
-   `dockge-firewall.service`:
+   protects against router port-forwarding. All published Docker UI ports are
+   managed together by `docker-published-firewall.service`:
    ```bash
    sudo iptables -S DOCKER-USER
-   systemctl status dockge-firewall.service
+   systemctl status docker-published-firewall.service
    ```
-   To also allow a VPN subnet, edit `LAN` in
-   `/usr/local/sbin/dockge-firewall.sh` and run
-   `sudo systemctl restart dockge-firewall.service`.
+   To allow a VPN subnet or add a new UI port, edit `LAN`/`PORTS` in
+   `/usr/local/sbin/docker-published-firewall.sh` and run
+   `sudo systemctl restart docker-published-firewall.service`.
 
 Dockge mounts `/var/run/docker.sock` (root-equivalent) and therefore must be
 treated as an admin tool. Anyone who can reach :5001 and log in can control
@@ -315,6 +345,7 @@ LAN or the public Internet:
 | Cockpit     | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
 | Dockge      | `http://<node>.<tailnet>.ts.net:5001` |
 | Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
+| Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
 | Jellyseerr  | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
 | Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
@@ -379,8 +410,8 @@ Adopted from the orphaned CasaOS container into a managed stack.
 - Secret: `/opt/stacks/jellyfin/.env` (`OPENAI_API_KEY`, gitignored, mode 0600)
 - Ports: bound to `192.168.1.70` + `127.0.0.1` only; DLNA on the LAN address.
   Remote access is via `tailscale serve` -> `tcp/8096` -> `127.0.0.1:8096`.
-- Firewall: `jellyfin-firewall.service` drops tcp/8096 and tcp/8920 from
-  outside `192.168.1.0/24` in `DOCKER-USER`.
+- Firewall: `docker-published-firewall.service` drops non-LAN traffic to all
+  published Docker UI ports (8096/8920 included) in `DOCKER-USER`.
 
 ### Commands
 

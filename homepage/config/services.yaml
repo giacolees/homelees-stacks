@@ -1,0 +1,52 @@
+# All links use {{HOMEPAGE_VAR_HOST}}, set in compose.yaml.
+# Add widgets (API keys) later if you want live stats; links work as-is.
+
+- Media:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8096
+        description: Movies, TV, music, books
+    - Jellyseerr:
+        icon: jellyseerr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:5055
+        description: Request movies & shows
+    - Bazarr:
+        icon: bazarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:6767
+        description: Subtitles
+
+- Downloads:
+    - Sonarr:
+        icon: sonarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8989
+        description: TV automation
+    - Radarr:
+        icon: radarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:7878
+        description: Movie automation
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:9696
+        description: Indexers
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8080
+        description: Torrents (VPN)
+    - SABnzbd:
+        icon: sabnzbd.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8081
+        description: Usenet
+
+- Management:
+    - Cockpit:
+        icon: cockpit.png
+        href: https://{{HOMEPAGE_VAR_HOST}}:9090
+        description: Server management
+    - Dockge:
+        icon: dockge.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:5001
+        description: Compose stacks
+    - Tailscale:
+        icon: tailscale.png
+        href: https://login.tailscale.com/admin/machines
+        description: Tailnet admin

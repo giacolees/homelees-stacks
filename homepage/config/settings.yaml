@@ -1,0 +1,16 @@
+title: Homelees
+description: Home server dashboard
+theme: dark
+color: slate
+headerStyle: boxed
+statusStyle: dot
+layout:
+  Media:
+    style: row
+    columns: 3
+  Downloads:
+    style: row
+    columns: 5
+  Management:
+    style: row
+    columns: 3
