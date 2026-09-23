@@ -388,7 +388,7 @@ the setup wizard.
 ### Media library
 
 Media lives on the 18TB disk, stably mounted at `/mnt/media` and bind-mounted
-into the container as `/media`. Create Jellyfin libraries pointing at:
+into the container as `/media`. Jellyfin libraries:
 
 | Library   | Container path       |
 |-----------|----------------------|
@@ -396,6 +396,27 @@ into the container as `/media`. Create Jellyfin libraries pointing at:
 | TV Shows  | `/media/TV Shows`    |
 | Music     | `/media/Music`       |
 | Books     | `/media/Books`       |
+| Images    | `/media/Images`      |
+| Videos    | `/media/Videos`      |
+
+General (non-Jellyfin) storage lives on the same disk:
+
+| Purpose  | Host path              | Container path    |
+|----------|------------------------|-------------------|
+| Datasets | `/mnt/media/Datasets`  | `/media/Datasets` |
+
+Full layout on the 18TB disk:
+
+```
+/mnt/media/
+├── Books/        # Jellyfin "Books" library
+├── Datasets/     # datasets / general storage (not a Jellyfin library)
+├── Images/       # Jellyfin "Photos" library
+├── Movies/       # Jellyfin "Movies" library
+├── Music/        # Jellyfin "Music" library
+├── TV Shows/     # Jellyfin "Shows" library
+└── Videos/       # Jellyfin "Home Videos" library
+```
 
 Files must be readable/writable by UID/GID `1000` (the disk is `chown`ed to
 `1000:1000`, matching Jellyfin's `PUID`/`PGID`).
