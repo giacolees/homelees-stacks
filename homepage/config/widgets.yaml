@@ -1,3 +1,21 @@
+# Server status (host CPU / RAM / disk / uptime) via the Glances container.
+# `version: 4` matches the Glances 4.x image. `disk` entries are mount points
+# as seen by Glances (host root mounted at /host, media disk at /mnt/media).
+- glances:
+    url: http://glances:61208
+    version: 4
+    label: Homelees
+    cpu: true
+    mem: true
+    uptime: true
+    cputemp: true
+    disk:
+      - /host
+      - /host/var
+      - /mnt/media
+    diskUnits: bbytes
+    expanded: true
+
 - datetime:
     text_size: xl
     format:
