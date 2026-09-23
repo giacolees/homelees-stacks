@@ -1,0 +1,41 @@
+# Jellyfin media server (linuxserver.io image)
+#
+# Adopted from the previously CasaOS-managed container that was running as an
+# orphan. The image, volumes and environment are preserved so existing Jellyfin
+# settings and library configuration keep working. Data lives outside git in
+# /DATA/AppData/jellyfin.
+#
+# Primary interface:  sudo docker compose -f /opt/stacks/jellyfin/compose.yaml ...
+# Secrets:            ./.env  (gitignored, e.g. OPENAI_API_KEY)
+#
+# Ports are bound to the LAN address and loopback only. Remote (off-LAN) access
+# is provided by `tailscale serve` -> tcp/8096 -> 127.0.0.1:8096. DLNA stays
+# LAN-only. Do NOT change these to 0.0.0.0 without also reviewing the firewall.
+services:
+  jellyfin:
+    # Version-pinned tag (image id 51252e7a416e). Avoid :latest.
+    image: linuxserver/jellyfin:12.1ubu2604-ls50
+    container_name: jellyfin
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+      - JELLYFIN_PublishedServerUrl=
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - /DATA/AppData/jellyfin/config:/config
+      - /DATA/AppData/jellyfin/data/movies:/data/movies
+      - /DATA/AppData/jellyfin/data/tvshows:/data/tvshows
+      # Your media library (currently empty). Uncomment to expose it to Jellyfin:
+      # - /DATA/Media:/media
+    ports:
+      # Web UI (LAN + loopback for tailscale serve)
+      - "192.168.1.70:8096:8096"
+      - "127.0.0.1:8096:8096"
+      # Built-in HTTPS (LAN + loopback)
+      - "192.168.1.70:8920:8920"
+      - "127.0.0.1:8920:8920"
+      # DLNA discovery (LAN only)
+      - "192.168.1.70:1900:1900/udp"
+      - "192.168.1.70:7359:7359/udp"

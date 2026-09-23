@@ -4,10 +4,9 @@ This directory holds self-hosted app stacks for **homelees** (Debian 12).
 **`docker compose` is the primary management interface.** Dockge is an optional
 web UI that reads/writes the same stacks.
 
-> This machine already runs a Jellyfin container that was previously managed by
-> CasaOS. Its compose project directory was removed, so it is now an orphaned
-> container and is **not** managed from here. Do not recreate/remove it from
-> this repo.
+> Jellyfin was previously running as an orphaned CasaOS container. It has been
+> adopted into a managed stack at `jellyfin/compose.yaml`, preserving its
+> image, volumes and environment. Data lives in `/DATA/AppData/jellyfin`.
 
 ---
 
@@ -17,6 +16,9 @@ web UI that reads/writes the same stacks.
 /opt/stacks/
 ├── README.md                 # this file
 ├── .gitignore                # keeps credentials/state out of git
+├── jellyfin/                 # media server (adopted from CasaOS)
+│   ├── compose.yaml
+│   └── .env                  # OPENAI_API_KEY (gitignored, mode 0600)
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -304,10 +306,11 @@ Cockpit and Dockge stay bound to the LAN **and loopback only**. `tailscale
 serve` forwards tailnet traffic to loopback, so nothing new is exposed on the
 LAN or the public Internet:
 
-| Service | Tailnet URL |
-|---------|-------------|
-| Cockpit | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
-| Dockge  | `http://<node>.<tailnet>.ts.net:5001` |
+| Service  | Tailnet URL |
+|----------|-------------|
+| Cockpit  | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
+| Dockge   | `http://<node>.<tailnet>.ts.net:5001` |
+| Jellyfin | `http://<node>.<tailnet>.ts.net:8096` |
 
 `tailscale-serve.service` waits for login and applies the config
 automatically. To re-apply manually:
@@ -353,6 +356,40 @@ sudo tailscale logout        # disconnect (also revoke in the admin console)
   the LAN/tailnet later if you want.
 - Tailscale is a third-party control plane (free tier). For full self-hosting,
   the same role can be filled by WireGuard or Headscale.
+
+## Jellyfin (media server)
+
+Adopted from the orphaned CasaOS container into a managed stack.
+
+- Stack: `/opt/stacks/jellyfin/compose.yaml`
+- Image: `linuxserver/jellyfin:12.1ubu2604-ls50` (version-pinned)
+- Config/data: `/DATA/AppData/jellyfin/{config,data}` (outside git)
+- Secret: `/opt/stacks/jellyfin/.env` (`OPENAI_API_KEY`, gitignored, mode 0600)
+- Ports: bound to `192.168.1.70` + `127.0.0.1` only; DLNA on the LAN address.
+  Remote access is via `tailscale serve` -> `tcp/8096` -> `127.0.0.1:8096`.
+- Firewall: `jellyfin-firewall.service` drops tcp/8096 and tcp/8920 from
+  outside `192.168.1.0/24` in `DOCKER-USER`.
+
+### Commands
+
+```bash
+cd /opt/stacks/jellyfin
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d    # update
+sudo docker compose down                                 # stop/remove
+```
+
+First run: open `http://192.168.1.70:8096` (LAN) or the tailnet URL and complete
+the setup wizard.
+
+### Media library
+
+The stack mounts `/DATA/AppData/jellyfin/data/{movies,tvshows}`. If your media
+lives in `/DATA/Media`, uncomment the `/DATA/Media:/media` volume in
+`compose.yaml` and add libraries under `/media/Movies`, `/media/Music`,
+`/media/TV Shows`.
 
 ## Backups
 
