@@ -8,6 +8,9 @@ services:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
     restart: unless-stopped
+    # Widget API keys live here (gitignored, mode 0600)
+    env_file:
+      - .env
     environment:
       - TZ=Europe/Rome
       # Change this to 192.168.1.70 if you prefer LAN-IP links (works only at
@@ -21,3 +24,17 @@ services:
       # LAN + loopback only; remote access via `tailscale serve` -> tcp/3000
       - "192.168.1.70:3000:3000"
       - "127.0.0.1:3000:3000"
+    # Join the app networks so widgets reach APIs by container name (this stays
+    # inside Docker and is not subject to the DOCKER-USER published-port rules).
+    networks:
+      - default
+      - downloads
+      - jellyfin
+
+networks:
+  downloads:
+    external: true
+    name: downloads_default
+  jellyfin:
+    external: true
+    name: jellyfin_default

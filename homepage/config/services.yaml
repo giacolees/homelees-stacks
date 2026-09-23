@@ -1,41 +1,78 @@
-# All links use {{HOMEPAGE_VAR_HOST}}, set in compose.yaml.
-# Add widgets (API keys) later if you want live stats; links work as-is.
+# Links use {{HOMEPAGE_VAR_HOST}}; widget API keys come from .env (gitignored).
+# Widget URLs use container names because Homepage joins the app Docker networks.
 
 - Media:
     - Jellyfin:
         icon: jellyfin.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8096
         description: Movies, TV, music, books
+        # Enable after the Jellyfin setup wizard + creating an API key
+        # (Settings -> Advanced -> API Keys):
+        # widget:
+        #   type: jellyfin
+        #   url: http://jellyfin:8096
+        #   key: {{HOMEPAGE_VAR_JELLYFIN_KEY}}
     - Jellyseerr:
         icon: jellyseerr.png
         href: http://{{HOMEPAGE_VAR_HOST}}:5055
         description: Request movies & shows
+        # Enable after Jellyseerr setup (Settings -> General -> API Key):
+        # widget:
+        #   type: seerr
+        #   url: http://jellyseerr:5055
+        #   key: {{HOMEPAGE_VAR_JELLYSEERR_KEY}}
     - Bazarr:
         icon: bazarr.png
         href: http://{{HOMEPAGE_VAR_HOST}}:6767
         description: Subtitles
+        widget:
+          type: bazarr
+          url: http://bazarr:6767
+          key: {{HOMEPAGE_VAR_BAZARR_KEY}}
 
 - Downloads:
     - Sonarr:
         icon: sonarr.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8989
         description: TV automation
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: {{HOMEPAGE_VAR_SONARR_KEY}}
     - Radarr:
         icon: radarr.png
         href: http://{{HOMEPAGE_VAR_HOST}}:7878
         description: Movie automation
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: {{HOMEPAGE_VAR_RADARR_KEY}}
     - Prowlarr:
         icon: prowlarr.png
         href: http://{{HOMEPAGE_VAR_HOST}}:9696
         description: Indexers
+        widget:
+          type: prowlarr
+          url: http://prowlarr:9696
+          key: {{HOMEPAGE_VAR_PROWLARR_KEY}}
     - qBittorrent:
         icon: qbittorrent.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8080
         description: Torrents (VPN)
+        # Enable after the VPN is configured and qBittorrent is running:
+        # widget:
+        #   type: qbittorrent
+        #   url: http://gluetun:8080
+        #   username: admin
+        #   password: {{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}
     - SABnzbd:
         icon: sabnzbd.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8081
         description: Usenet
+        widget:
+          type: sabnzbd
+          url: http://sabnzbd:8080
+          key: {{HOMEPAGE_VAR_SABNZBD_KEY}}
 
 - Management:
     - Cockpit:

@@ -35,4 +35,3 @@ homepage/config/*
 !homepage/config/settings.yaml
 !homepage/config/widgets.yaml
 !homepage/config/bookmarks.yaml
-!homepage/config/docker.yaml

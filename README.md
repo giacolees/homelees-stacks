@@ -213,10 +213,36 @@ Tailscale MagicDNS name so they work from anywhere. To use LAN-IP links instead,
 set `HOMEPAGE_VAR_HOST=192.168.1.70` and restart the stack.
 
 Add/edit apps in `config/services.yaml`; layout/groups in `config/settings.yaml`.
-Homepage runs **without** the Docker socket (links only), to avoid exposing
-root-equivalent access through an unauthenticated UI. To add live widgets
-(Jellyfin/Sonarr/Radarr/qBittorrent/SABnzbd/Prowlarr/Bazarr), add the relevant
-`widget:` block with an API key — the apps must be configured first.
+`config/bookmarks.yaml` is an explicit empty list (`[]`) to suppress Homepage's
+default Developer/Social/Entertainment examples.
+
+### Live widgets
+
+Homepage joins the `downloads_default` and `jellyfin_default` Docker networks so
+widgets reach app APIs by container name (this stays inside Docker and is not
+subject to the published-port `DOCKER-USER` rules). Widget API keys are stored in
+`/opt/stacks/homepage/.env` (gitignored, mode 0600) and referenced as
+`{{HOMEPAGE_VAR_*}}`.
+
+Working now: **Sonarr, Radarr, Prowlarr, Bazarr, SABnzbd**.
+
+Commented out until those apps are set up:
+- **Jellyfin** — finish the setup wizard, create an API key, uncomment the widget.
+- **Jellyseerr** — Settings -> General -> API Key, uncomment the widget.
+- **qBittorrent** — after the VPN is configured and qBittorrent is running.
+
+After editing any config, regenerate Homepage's cached static HTML:
+```bash
+curl -X POST http://127.0.0.1:3000/api/revalidate
+```
+(or click the refresh icon in the bottom-right of the dashboard).
+
+Note: SABnzbd's `host_whitelist` was extended (in
+`/opt/stacks/downloads/config/sabnzbd/sabnzbd.ini`) to allow the `sabnzbd`
+hostname and the LAN/MagicDNS names, otherwise the widget gets HTTP 403.
+
+Homepage runs **without** the Docker socket, to avoid exposing root-equivalent
+access through an unauthenticated UI.
 
 ```bash
 cd /opt/stacks/homepage
