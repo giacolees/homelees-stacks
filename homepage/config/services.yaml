@@ -1,6 +1,12 @@
 # All links use {{HOMEPAGE_VAR_HOST}}, set in compose.yaml.
 # Server status is provided by the Glances info widget (widgets.yaml).
 
+- Files:
+    - Nextcloud:
+        icon: nextcloud.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8082
+        description: Files, photos, calendar
+
 - Media:
     - Jellyfin:
         icon: jellyfin.png

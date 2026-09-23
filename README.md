@@ -26,6 +26,9 @@ web UI that reads/writes the same stacks.
 ├── homepage/                 # dashboard (links to every app)
 │   ├── compose.yaml
 │   └── config/               # services.yaml, settings.yaml, widgets.yaml
+├── nextcloud/                # files/photos/calendar
+│   ├── compose.yaml
+│   └── .env                  # DB/admin passwords (gitignored)
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -81,6 +84,10 @@ sudo usermod -aG docker giacolees   # then log out/in
 
 - Docker Engine `docker-ce` 29.8.1
 - Docker Compose plugin `docker-compose-plugin` v5.5.1 (`docker compose`)
+- Docker data lives on the SSD, **not** the small `/var` partition:
+  `/etc/docker/daemon.json` sets `data-root: /home/docker`, and
+  `/etc/containerd/config.toml` sets `root = /home/containerd`.
+  (This moved `/var` from 93% to ~9% used.)
 
 Verify:
 
@@ -365,6 +372,7 @@ LAN or the public Internet:
 | Dockge      | `http://<node>.<tailnet>.ts.net:5001` |
 | Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
 | Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
+| Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
 | Jellyseerr  | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
 | Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
@@ -565,6 +573,33 @@ Until then, `gluetun` and `qbittorrent` stay stopped; all other apps run.
 7. **Bazarr**: add languages + subtitle providers; connect Sonarr/Radarr.
 8. **Jellyseerr**: sign in with Jellyfin, connect Sonarr/Radarr.
 9. In Jellyfin, scan libraries so imported media appears.
+
+## Nextcloud
+
+Personal cloud (files, photos, calendar) at `/opt/stacks/nextcloud`.
+
+- URL (LAN): http://192.168.1.70:8082
+- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:8082
+- App/config: `/home/nextcloud/config` (SSD)
+- Database (MariaDB): `/home/nextcloud/db` (SSD)
+- Redis: `/home/nextcloud/redis` (SSD)
+- User data: `/mnt/media/Nextcloud/data` (18TB disk)
+- Secrets: `/opt/stacks/nextcloud/.env` (gitignored, mode 0600)
+- Admin user: `admin` (password in `.env`)
+
+```bash
+cd /opt/stacks/nextcloud
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
+
+`occ` (Nextcloud CLI):
+```bash
+sudo docker exec -u www-data nextcloud php occ status
+sudo docker exec -u www-data nextcloud php occ config:system:get trusted_domains
+```
 
 ## Backups
 
