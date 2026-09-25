@@ -1,8 +1,8 @@
 # /opt/stacks — Docker Compose stacks (primary CLI)
 
 This directory holds self-hosted app stacks for **homelees** (Debian 12).
-**`docker compose` is the primary management interface.** Dockge is an optional
-web UI that reads/writes the same stacks.
+**`docker compose` is the primary management interface.** Komodo is the web UI
+that reads/writes the same stacks (it replaced Dockge).
 
 > Jellyfin was previously running as an orphaned CasaOS container. It has been
 > adopted into a managed stack at `jellyfin/compose.yaml`, preserving its
@@ -34,10 +34,14 @@ web UI that reads/writes the same stacks.
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
     └── .env.example          # OPTIONAL, committed template with dummy values
 
-/opt/dockge/
-├── compose.yaml              # Dockge's own stack (LAN-bound UI on :5001)
-└── data/                     # Dockge state + admin password hash + JWT
-                              # root:root, mode 0700 — never commit/copy around
+/home/giacolees/komodo/       # Komodo (build/deploy web UI) - outside this repo
+├── mongo.compose.yaml        # Komodo Core + Periphery + MongoDB
+├── compose.env               # Core/Periphery config + secrets (mode 0600)
+└── backups/                  # scheduled Komodo DB backups
+
+/opt/dockge/                  # retired Dockge install (stopped, kept for rollback)
+├── compose.yaml              # `docker compose up -d` here restores Dockge
+└── data/                     # old Dockge state (root:root, mode 0700)
 ```
 
 Conventions:
@@ -52,12 +56,14 @@ Conventions:
 |--------------------------|----------------|-------|------------------------------------------|
 | `/opt/stacks`            | giacolees:giacolees | 2775 | setgid + default ACLs for agent editing  |
 | `/opt/stacks/<app>`      | giacolees:giacolees | 2775 | created by the admin user                |
-| `/opt/dockge`            | giacolees:giacolees | 0755 | compose file editable                    |
-| `/opt/dockge/data`       | root:root      | 0700  | secrets; root-only                       |
+| `/opt/dockge`            | giacolees:giacolees | 0755 | retired Dockge install                   |
+| `/opt/dockge/data`       | root:root      | 0700  | old Dockge secrets; root-only            |
+| `/home/giacolees/komodo` | giacolees:giacolees | 0755 | Komodo compose + config                  |
+| `.../komodo/compose.env` | giacolees:giacolees | 0600 | Komodo secrets; root-only-ish            |
 | `/var/run/docker.sock`   | root:docker    | 0660  | root-equivalent access                   |
 
 `/opt/stacks` uses a setgid bit and a **default ACL** so files created by root
-(for example when Dockge creates a stack from its UI) remain editable by the
+(for example when Komodo/Periphery writes files) remain editable by the
 `giacolees` user. If a stack somehow ends up root-owned:
 
 ```bash
@@ -179,10 +185,10 @@ sudo docker compose pull
 sudo docker compose up -d
 ```
 
-Rollback Dockge itself:
+Rollback to Dockge (retired):
 
-Dockge's compose file lives at `/opt/dockge/compose.yaml` (outside this git
-repo). Keep a copy or track it in your own config backup, then:
+Dockge is stopped but its compose file and state are intact at `/opt/dockge/`
+(outside this git repo). To fall back:
 
 ```bash
 cd /opt/dockge
@@ -190,12 +196,14 @@ sudo docker compose config
 sudo docker compose up -d
 ```
 
+Do not then deploy the same stack from both Dockge and Komodo.
+
 ## Git & credentials
 
 `/opt/stacks` is a git repo. `.gitignore` excludes `.env`, key material, and
 common state directories. **Never commit credentials, tokens, `.env` files,
-private keys, or Dockge's `data/` directory.** Commit only compose files and
-`.env.example` templates with placeholder values.
+private keys, or Komodo's `compose.env` / Dockge's `data/`.** Commit only
+compose files and `.env.example` templates with placeholder values.
 
 ```bash
 cd /opt/stacks
@@ -209,7 +217,9 @@ git commit -m "add <app> stack"
 ## Homepage (dashboard)
 
 One page listing every app — no need to remember IP:port. Config is YAML under
-`/opt/stacks/homepage/config` (tracked in git; no secrets).
+`/opt/stacks/homepage/config` (tracked in git). Secrets are not stored there:
+the Komodo widget's API key/secret live in the gitignored
+`/opt/stacks/homepage/.env` and reach the container as `HOMEPAGE_VAR_KOMODO_*`.
 
 - URL (LAN): http://192.168.1.70:3000
 - URL (tailnet): http://homelees-1.lungfish-pike.ts.net:3000
@@ -252,49 +262,68 @@ sudo docker compose logs -f --tail=100
 sudo docker compose pull && sudo docker compose up -d   # update
 ```
 
-## Dockge (optional web UI)
+## Komodo (build & deploy UI)
 
-- URL: **http://192.168.1.70:5001**
-- Stack: `/opt/dockge/compose.yaml` (official `louislam/dockge:1` image)
-- Dockge manages the same `/opt/stacks` directory, so CLI and UI stay in sync.
+Komodo manages the same `/opt/stacks` directory as the CLI (Files-on-Host
+mode), plus containers, builds and git-based deploys. It replaced Dockge.
+
+- URL (LAN): **http://192.168.1.70:9120**
+- URL (tailnet): `http://homelees-1.lungfish-pike.ts.net:9120`
+- Stack: `/home/giacolees/komodo/mongo.compose.yaml` (Core + Periphery + Mongo)
+- Config/secrets: `/home/giacolees/komodo/compose.env` (mode 0600)
+- Admin login: created on first launch; credentials in `compose.env`
+  (`KOMODO_INIT_ADMIN_USERNAME` / `KOMODO_INIT_ADMIN_PASSWORD`)
+
+Komodo runs **three containers**: `komodo-core` (UI/API on :9120),
+`komodo-periphery` (agent that runs compose/builds on the host) and
+`komodo-mongo` (state). Periphery's root directory is `/opt`, mounted into the
+container at the same path, which is why it can see `/opt/stacks`. It also
+mounts `/var/run/docker.sock`.
+
+Imported stacks use `files_on_host = true`,
+`run_directory = /opt/stacks/<name>`, `auto_pull = false`, and the correct
+`project_name` (the `wellness` directory maps to project `my-wellness-coach`).
 
 ### Access control
 
 The UI is **not exposed to the public Internet**:
 
-1. The published port is bound to the LAN address only:
-   `192.168.1.70:5001:5001` (not `0.0.0.0`, not IPv6). Verify:
-   ```bash
-   sudo ss -tlnp | grep 5001      # should show 192.168.1.70:5001
-   ```
-2. Docker published ports **bypass the host INPUT chain**, so a `DOCKER-USER`
-   rule drops tcp/5001 from any source outside `192.168.1.0/24`. This also
-   protects against router port-forwarding. All published Docker UI ports are
+1. Core binds `0.0.0.0:9120`, so a `DOCKER-USER` rule drops tcp/9120 from any
+   source outside `192.168.1.0/24` (the tailnet address included, so remote
+   access goes through `tailscale serve`). All published Docker UI ports are
    managed together by `docker-published-firewall.service`:
    ```bash
-   sudo iptables -S DOCKER-USER
+   sudo iptables -S DOCKER-USER | grep 9120
    systemctl status docker-published-firewall.service
    ```
-   To allow a VPN subnet or add a new UI port, edit `LAN`/`PORTS` in
-   `/usr/local/sbin/docker-published-firewall.sh` and run
-   `sudo systemctl restart docker-published-firewall.service`.
+2. Remote access is via `tailscale serve` -> `127.0.0.1:9120` (listed in
+   `/usr/local/sbin/tailscale-remote-access.sh`).
 
-Dockge mounts `/var/run/docker.sock` (root-equivalent) and therefore must be
-treated as an admin tool. Anyone who can reach :5001 and log in can control
-Docker. Keep it on the LAN/VPN.
+To allow a VPN subnet or add a new UI port, edit `LAN`/`PORTS` in
+`/usr/local/sbin/docker-published-firewall.sh` (and the tailscale script) and
+run `sudo systemctl restart docker-published-firewall.service`.
 
-### Dockge lifecycle
+Komodo/Periphery mount `/var/run/docker.sock` (root-equivalent) and therefore
+must be treated as an admin tool. Anyone who can reach :9120 and log in can
+control Docker. Keep it on the LAN/VPN.
+
+### Komodo lifecycle
 
 ```bash
-cd /opt/dockge
-sudo docker compose config
-sudo docker compose up -d
-sudo docker compose logs -f --tail=100
-sudo docker compose pull && sudo docker compose up -d   # update
+cd /home/giacolees/komodo
+sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env ps
+sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env up -d
+sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env logs -f --tail=100
+# update: pull newer images and recreate
+sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env pull
+sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env up -d
 ```
 
-First login: open the URL and create the admin account (stored in
-`/opt/dockge/data`, root-only).
+The Homepage dashboard shows a Komodo widget (server/stack/container counts).
+Its API key/secret live in `/opt/stacks/homepage/.env` (gitignored) and reach
+the container as `HOMEPAGE_VAR_KOMODO_KEY` / `HOMEPAGE_VAR_KOMODO_SECRET`.
+Create a new key with:
+`sudo docker exec komodo-core-1 km create api-key --for admin <name>`.
 
 ## Cockpit (host management UI)
 
@@ -337,7 +366,7 @@ sudo apt-get update && sudo apt-get install --only-upgrade cockpit
 Cockpit generates a self-signed certificate (`CN=homelees`, 1-year validity).
 For a trusted certificate, put Cockpit behind the existing Apache reverse proxy
 or install a real certificate. Note: Cockpit does **not** ship a Docker module
-in Debian; Docker Compose management is done with the CLI and Dockge.
+in Debian; Docker Compose management is done with the CLI and Komodo.
 
 ## Tailscale (remote access VPN)
 
@@ -362,14 +391,14 @@ alone.
 
 ### Remote access to the web UIs
 
-Cockpit and Dockge stay bound to the LAN **and loopback only**. `tailscale
-serve` forwards tailnet traffic to loopback, so nothing new is exposed on the
-LAN or the public Internet:
+Cockpit stays bound to the LAN **and loopback only**, and Komodo's published
+port is firewalled to the LAN. `tailscale serve` forwards tailnet traffic to
+loopback, so nothing new is exposed on the LAN or the public Internet:
 
 | Service     | Tailnet URL |
 |-------------|-------------|
 | Cockpit     | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
-| Dockge      | `http://<node>.<tailnet>.ts.net:5001` |
+| Komodo      | `http://<node>.<tailnet>.ts.net:9120` |
 | Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
 | Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
 | Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
@@ -393,8 +422,8 @@ sudo tailscale serve status
 
 `/usr/local/sbin/cockpit-firewall.sh` now allows the `tailscale0` interface and
 loopback in addition to `192.168.1.0/24`; everything else to tcp/9090 is
-dropped (chain `COCKPIT-FW`). Docker-published ports (Dockge) are **not**
-reachable directly over Tailscale — only through `tailscale serve`.
+dropped (chain `COCKPIT-FW`). Docker-published ports (Komodo and the app UIs)
+are **not** reachable directly over Tailscale — only through `tailscale serve`.
 
 ### Optional: reach the whole LAN
 
@@ -553,6 +582,7 @@ sudo docker compose -f /opt/stacks/downloads/compose.yaml up -d
 ```
 
 Until then, `gluetun` and `qbittorrent` stay stopped; all other apps run.
+Deploying the `downloads` stack from Komodo will also try to start them.
 
 ### Folder mapping
 
@@ -604,5 +634,7 @@ sudo docker exec -u www-data nextcloud php occ config:system:get trusted_domains
 ## Backups
 
 Back up `/opt/stacks` (git remote or archive) and each app's data directory
-(e.g. `/DATA/<app>`). Dockge's `/opt/dockge/data` contains its admin hash and
-JWT secret; back it up only to encrypted storage.
+(e.g. `/DATA/<app>`). Komodo keeps its state in the `komodo` Mongo volume and
+writes scheduled backups under `/home/giacolees/komodo/backups`; send both to
+encrypted storage. The retired Dockge state at `/opt/dockge/data` (admin hash +
+JWT secret) can be backed up on encrypted storage or deleted.

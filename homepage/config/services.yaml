@@ -48,11 +48,23 @@
         icon: cockpit.png
         href: https://{{HOMEPAGE_VAR_HOST}}:9090
         description: Server management
-    - Dockge:
-        icon: dockge.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:5001
-        description: Compose stacks
+    - Komodo:
+        icon: komodo.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:9120
+        description: Containers, builds & deploys
+        widget:
+            type: komodo
+            url: http://192.168.1.70:9120
+            key: "{{HOMEPAGE_VAR_KOMODO_KEY}}"
+            secret: "{{HOMEPAGE_VAR_KOMODO_SECRET}}"
+            showSummary: true
     - Tailscale:
         icon: tailscale.png
         href: https://login.tailscale.com/admin/machines
         description: Tailnet admin
+
+- Health:
+    - Vita:
+        icon: mdi-heart-pulse
+        href: http://{{HOMEPAGE_VAR_HOST}}:3100
+        description: Wellness coach
