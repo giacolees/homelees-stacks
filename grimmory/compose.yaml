@@ -1,0 +1,69 @@
+# Grimmory - self-hosted library for ebooks, comics & audiobooks.
+# (Successor to BookLore; auto-migrates BookLore data on first start.)
+#
+# Based on the official compose for Grimmory v3.5.0:
+#   https://github.com/grimmory-tools/grimmory/blob/v3.5.0/deploy/compose/docker-compose.yml
+#
+# Storage layout:
+#   - App data (settings, metadata cache, covers): /home/grimmory/data (SSD)
+#   - MariaDB: /home/grimmory/mariadb/config (SSD)
+#   - Book library: /mnt/media/Grimmory/books (18TB disk)
+#   - Bookdrop (auto-import watched folder): /mnt/media/Grimmory/bookdrop
+#
+# Ports are bound to the LAN address and loopback only. Off-LAN access is via
+# `tailscale serve` -> tcp/6060 -> 127.0.0.1:6060, and
+# `docker-published-firewall.service` drops non-LAN traffic to 6060 in
+# DOCKER-USER. Do NOT publish on 0.0.0.0 without reviewing the firewall.
+name: grimmory
+
+services:
+  grimmory:
+    container_name: grimmory
+    image: grimmory/grimmory:${GRIMMORY_VERSION}
+    restart: unless-stopped
+    environment:
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - TZ=${TZ}
+      - DATABASE_URL=jdbc:mariadb://mariadb:3306/grimmory
+      - DATABASE_USERNAME=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - SWAGGER_ENABLED=false
+      - FORCE_DISABLE_OIDC=false
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      # LAN + loopback (loopback is used by `tailscale serve`)
+      - "192.168.1.70:6060:6060"
+      - "127.0.0.1:6060:6060"
+    volumes:
+      - /home/grimmory/data:/app/data
+      - /mnt/media/Grimmory/books:/books
+      - /mnt/media/Grimmory/bookdrop:/bookdrop
+    healthcheck:
+      test: wget -q -O - http://localhost:6060/api/v1/healthcheck
+      interval: 60s
+      retries: 5
+      start_period: 60s
+      timeout: 10s
+
+  mariadb:
+    container_name: grimmory-mariadb
+    image: lscr.io/linuxserver/mariadb:11.4.8
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=grimmory
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - /home/grimmory/mariadb/config:/config
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

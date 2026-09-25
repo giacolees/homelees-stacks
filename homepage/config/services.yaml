@@ -13,6 +13,12 @@
         href: http://{{HOMEPAGE_VAR_HOST}}:2283
         description: Photo & video backup (mobile app)
 
+- Reading:
+    - Grimmory:
+        icon: https://raw.githubusercontent.com/grimmory-tools/grimmory/main/frontend/public/icons/icon-144x144.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:6060
+        description: Ebooks, comics & audiobooks
+
 - Media:
     - Jellyfin:
         icon: jellyfin.png

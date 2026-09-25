@@ -33,6 +33,10 @@ that reads/writes the same stacks (it replaced Dockge).
 │   ├── compose.yaml
 │   ├── .env                  # DB password (gitignored, mode 0600)
 │   └── .env.example          # committed template with placeholders
+├── grimmory/                 # ebooks/comics/audiobooks library
+│   ├── compose.yaml
+│   ├── .env                  # DB passwords (gitignored, mode 0600)
+│   └── .env.example          # committed template with placeholders
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -407,6 +411,7 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
 | Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
 | Immich      | `http://<node>.<tailnet>.ts.net:2283` |
+| Grimmory    | `http://<node>.<tailnet>.ts.net:6060` |
 | Jellyseerr  | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
 | Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
@@ -671,6 +676,39 @@ sudo docker compose pull && sudo docker compose up -d   # update
 The Immich version is pinned in `.env` via `IMMICH_VERSION`. Bump it
 deliberately and read the release notes before pulling, since Immich requires
 occasional database migrations.
+
+## Grimmory
+
+Self-hosted library for ebooks, comics and audiobooks (the successor to
+BookLore; Kobo/KOReader sync, OPDS, built-in reader). At `/opt/stacks/grimmory`.
+
+- URL (LAN): http://192.168.1.70:6060
+- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:6060
+- Images: `grimmory/grimmory:v3.5.0` + `lscr.io/linuxserver/mariadb:11.4.8`
+- App data (settings, metadata cache): `/home/grimmory/data` (SSD)
+- Database: `/home/grimmory/mariadb/config` (SSD)
+- Book library: `/mnt/media/Grimmory/books` (18TB disk)
+- Bookdrop (auto-import folder): `/mnt/media/Grimmory/bookdrop`
+- Secrets: `/opt/stacks/grimmory/.env` (gitignored, mode 0600) — DB passwords
+- Port 6060 is bound to LAN + loopback and filtered by
+  `docker-published-firewall.service`; remote access is via `tailscale serve`
+
+```bash
+cd /opt/stacks/grimmory
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
+
+### First run
+
+1. Open the URL and create the admin account in the setup wizard.
+2. Create a library and point its "Book Folders" at `/books`.
+3. (Optional) drop files into `/bookdrop` for automatic metadata import.
+
+The version is pinned in `.env` via `GRIMMORY_VERSION`; the schema migrates
+automatically on start.
 
 ## Backups
 
