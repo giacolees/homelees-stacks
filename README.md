@@ -562,6 +562,7 @@ The "click to request, and it lands in the right folder" flow:
 
     Jellyseerr -> Prowlarr -> Sonarr / Radarr -> qBittorrent (via Gluetun VPN)
                                               \-> SABnzbd (Usenet)
+    Prowlarr -> FlareSolverr (Cloudflare / DDoS-GUARD bypass, internal only)
     Bazarr -> subtitles
 
 - Stack: `/opt/stacks/downloads/compose.yaml`
@@ -569,6 +570,8 @@ The "click to request, and it lands in the right folder" flow:
 - State: `/opt/stacks/downloads/config/<app>` (gitignored)
 - All apps mount the 18TB disk at `/data` (same filesystem as the libraries, so
   Sonarr/Radarr **hardlink** imports instead of copying).
+- FlareSolverr (Cloudflare / DDoS-GUARD bypass for Prowlarr) has **no published
+  port**; Prowlarr reaches it internally at `http://flaresolverr:8191`.
 
 | App         | Purpose                   | Host port | Tailnet URL |
 |-------------|---------------------------|-----------|-------------|
@@ -605,6 +608,8 @@ Deploying the `downloads` stack from Komodo will also try to start them.
 
 1. Complete the Jellyfin setup wizard, then create an API key.
 2. **Prowlarr**: add indexers, then Settings -> Apps -> add Sonarr & Radarr.
+   Add the Cloudflare solver under Settings -> Indexers -> Add Indexer ->
+   FlareSolverr (host `http://flaresolverr:8191`, tag `flaresolverr`).
 3. **qBittorrent** (after the VPN is up): set the admin password.
 4. **Sonarr**: add root folder `/data/TV Shows`; add qBittorrent (host `gluetun`,
    port `8080`) as a download client.

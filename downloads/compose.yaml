@@ -98,6 +98,23 @@ services:
     volumes:
       - ./config/prowlarr:/config
 
+  # --- Cloudflare / DDoS-GUARD bypass proxy for Prowlarr ---
+  # Internal only (no published port): Prowlarr reaches it at
+  # http://flaresolverr:8191 — add it there under Settings -> Indexers ->
+  # Add Indexer -> FlareSolverr. Never expose this service to the Internet.
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Rome
+      - LOG_LEVEL=info
+      - LOG_FILE=none
+      - LOG_HTML=false
+      - CAPTCHA_SOLVER=none
+    # Headless Chrome needs more than Docker's default 64MB /dev/shm.
+    shm_size: 256mb
+
   # --- TV automation ---
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
