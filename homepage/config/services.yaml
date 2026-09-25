@@ -7,6 +7,12 @@
         href: http://{{HOMEPAGE_VAR_HOST}}:8082
         description: Files, photos, calendar
 
+- Photos:
+    - Immich:
+        icon: immich.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:2283
+        description: Photo & video backup (mobile app)
+
 - Media:
     - Jellyfin:
         icon: jellyfin.png

@@ -29,6 +29,10 @@ that reads/writes the same stacks (it replaced Dockge).
 ├── nextcloud/                # files/photos/calendar
 │   ├── compose.yaml
 │   └── .env                  # DB/admin passwords (gitignored)
+├── immich/                   # photo & video library (mobile backup)
+│   ├── compose.yaml
+│   ├── .env                  # DB password (gitignored, mode 0600)
+│   └── .env.example          # committed template with placeholders
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -402,6 +406,7 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
 | Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
 | Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
+| Immich      | `http://<node>.<tailnet>.ts.net:2283` |
 | Jellyseerr  | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
 | Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
@@ -630,6 +635,42 @@ sudo docker compose pull && sudo docker compose up -d   # update
 sudo docker exec -u www-data nextcloud php occ status
 sudo docker exec -u www-data nextcloud php occ config:system:get trusted_domains
 ```
+
+## Immich
+
+Self-hosted photo & video library with a mobile app for background upload
+(the Google Photos replacement). At `/opt/stacks/immich`.
+
+- URL (LAN): http://192.168.1.70:2283
+- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:2283
+- Images: `ghcr.io/immich-app/immich-server:v3.2.2` and
+  `immich-machine-learning:v3.2.2`, plus Valkey 9 and Immich's PostgreSQL 14
+  (VectorChord + pgvecto.rs)
+- Library (uploads, thumbnails, encoded video): `/mnt/media/Immich` (18TB disk)
+- Database + ML model cache: named volumes `immich_pgdata` and
+  `immich_model-cache` (SSD — Docker data-root `/home/docker`)
+- Secrets: `/opt/stacks/immich/.env` (gitignored, mode 0600) — holds `DB_PASSWORD`
+- Transcoding uses the AMD Radeon Vega iGPU via VAAPI (`/dev/dri`); machine
+  learning runs on CPU (AMD integrated GPUs are not supported for ML)
+- Port 2283 is bound to the LAN address + loopback, filtered by
+  `docker-published-firewall.service`; remote access is via `tailscale serve`
+
+```bash
+cd /opt/stacks/immich
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
+
+### First run
+
+1. Open the URL and create the first user — this account becomes the admin.
+2. Install the Immich mobile app and point it at the URL, then enable backup.
+
+The Immich version is pinned in `.env` via `IMMICH_VERSION`. Bump it
+deliberately and read the release notes before pulling, since Immich requires
+occasional database migrations.
 
 ## Backups
 
