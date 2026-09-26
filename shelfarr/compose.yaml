@@ -1,0 +1,64 @@
+# Shelfarr - request & download system for ebooks/audiobooks ("Jellyseerr for
+# books"). Users request a title; Shelfarr searches Prowlarr, downloads through
+# qBittorrent (behind Gluetun) or SABnzbd, organises the files and delivers them
+# to a library (Audiobookshelf, BookOrbit or Grimmory).
+#
+# Based on the official compose example for Shelfarr v2026.09.18.1:
+#   https://github.com/Pedro-Revez-Silva/shelfarr/blob/main/docker-compose.example.yml
+#
+# Storage layout:
+#   - App data / SQLite / auto-generated secret key: /home/shelfarr/data (SSD)
+#   - Audiobook output: /mnt/media/Shelfarr/audiobooks (18TB disk)
+#   - Ebook output:     /mnt/media/Shelfarr/ebooks     (18TB disk)
+#   - Download client completed folder: /mnt/media/Downloads (18TB disk)
+#
+# The default output paths in Shelfarr are /audiobooks, /ebooks and /downloads,
+# so the mounts below make it work without changing that. Do NOT add separate
+# bind mounts for a "shared parent" here: hardlink layouts need one mount.
+#
+# Networks: Shelfarr reaches Prowlarr, qBittorrent (host `gluetun`) and SABnzbd
+# over the downloads stack network, and Grimmory (library scan/sync) over the
+# grimmory network. Nothing here needs a host port.
+#
+# Ports are bound to the LAN address + loopback only. Off-LAN access is via
+# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+name: shelfarr
+
+services:
+  shelfarr:
+    image: ghcr.io/pedro-revez-silva/shelfarr:${SHELFARR_VERSION}
+    container_name: shelfarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - SOLID_QUEUE_IN_PUMA=1
+    ports:
+      # LAN + loopback (loopback is used by `tailscale serve`)
+      - "192.168.1.70:5056:80"
+      - "127.0.0.1:5056:80"
+    volumes:
+      - /home/shelfarr/data:/rails/storage
+      - /mnt/media/Shelfarr/audiobooks:/audiobooks
+      - /mnt/media/Shelfarr/ebooks:/ebooks
+      - /mnt/media/Downloads:/downloads
+    networks:
+      - downloads_net
+      - grimmory_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  # The downloads stack's default network (Prowlarr / Gluetun+qBittorrent / SABnzbd).
+  downloads_net:
+    external: true
+    name: downloads_default
+  # The Grimmory stack's default network (library scan/sync).
+  grimmory_net:
+    external: true
+    name: grimmory_default

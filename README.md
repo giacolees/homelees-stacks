@@ -40,6 +40,10 @@ that reads/writes the same stacks (it replaced Dockge).
 │   ├── compose.yaml
 │   ├── .env                  # DB passwords (gitignored, mode 0600)
 │   └── .env.example          # committed template with placeholders
+├── shelfarr/                 # book request UI ("Jellyseerr for books")
+│   ├── compose.yaml
+│   ├── .env                  # version pin (gitignored, mode 0600)
+│   └── .env.example          # committed template with placeholders
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -421,6 +425,7 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Radarr      | `http://<node>.<tailnet>.ts.net:7878` |
 | Bazarr      | `http://<node>.<tailnet>.ts.net:6767` |
 | Chaptarr    | `http://<node>.<tailnet>.ts.net:8789` |
+| Shelfarr    | `http://<node>.<tailnet>.ts.net:5056` |
 | qBittorrent | `http://<node>.<tailnet>.ts.net:8080` |
 | SABnzbd     | `http://<node>.<tailnet>.ts.net:8081` |
 
@@ -531,6 +536,7 @@ Full layout on the 18TB disk:
 ├── Movies/       # Jellyfin "Movies" library
 ├── Music/        # Jellyfin "Music" library
 ├── Nextcloud/    # Nextcloud user data
+├── Shelfarr/     # Shelfarr request outputs: audiobooks/ & ebooks/
 ├── TV Shows/     # Jellyfin "Shows" library
 └── Videos/       # Jellyfin "Home Videos" library
 ```
@@ -784,6 +790,51 @@ sudo docker compose pull && sudo docker compose up -d   # update
 
 The version is pinned in `.env` via `GRIMMORY_VERSION`; the schema migrates
 automatically on start.
+
+## Shelfarr
+
+"Jellyseerr for books": users request ebooks and audiobooks, Shelfarr searches
+Prowlarr, downloads through qBittorrent (via Gluetun) or SABnzbd, organises the
+files and delivers them to a library (Audiobookshelf, BookOrbit or Grimmory).
+At `/opt/stacks/shelfarr`.
+
+- URL (LAN): http://192.168.1.70:5056
+- URL (tailnet): `http://<node>.<tailnet>.ts.net:5056`
+- Image: `ghcr.io/pedro-revez-silva/shelfarr:2026.09.18.1` (pinned in `.env`)
+- App data / SQLite / secret key: `/home/shelfarr/data` (SSD)
+- Audiobook output: `/mnt/media/Shelfarr/audiobooks` (18TB disk)
+- Ebook output: `/mnt/media/Shelfarr/ebooks` (18TB disk)
+- Downloads: `/mnt/media/Downloads` mounted at `/downloads`
+- Networks: `downloads_default` (Prowlarr, `gluetun:8080`, `sabnzbd:8080`) and
+  `grimmory_default` (`grimmory:6060`)
+- Port 5056 is bound to LAN + loopback and filtered by
+  `docker-published-firewall.service`; remote access is via `tailscale serve`
+
+```bash
+cd /opt/stacks/shelfarr
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
+
+### First run
+
+1. Open the URL; the first user to register becomes the admin.
+2. **Admin -> Settings -> Indexer**: Prowlarr, URL `http://prowlarr:9696`, plus
+   the Prowlarr API key.
+3. **Admin -> Download Clients**: add qBittorrent (`gluetun`, port `8080`)
+   and/or SABnzbd (`sabnzbd`, port `8080`), reusing the credentials in
+   `/opt/stacks/downloads/.env`.
+4. **Admin -> Settings -> Output Paths**: defaults are `/audiobooks`, `/ebooks`
+   and `/downloads`, which match the mounts above.
+5. (Optional) **Library Platform**: point it at Grimmory
+   (`http://grimmory:6060`) or Audiobookshelf so completed books get scanned.
+
+Shelfarr overlaps with Chaptarr (both acquire books). Use one as the primary
+acquisition path to avoid duplicate grabs; they can coexist for evaluation.
+The optional Audible Backup companion (`shelfarr-libation`) is not deployed;
+add it from the upstream compose example if you want that beta integration.
 
 ## Backups
 

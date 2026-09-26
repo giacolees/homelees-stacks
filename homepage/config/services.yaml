@@ -22,6 +22,10 @@
         icon: mdi-book-search
         href: http://{{HOMEPAGE_VAR_HOST}}:8789
         description: Audiobook & ebook automation
+    - Shelfarr:
+        icon: mdi-bookshelf
+        href: http://{{HOMEPAGE_VAR_HOST}}:5056
+        description: Request ebooks & audiobooks
 
 - Media:
     - Jellyfin:
