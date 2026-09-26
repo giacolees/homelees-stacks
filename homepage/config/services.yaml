@@ -72,6 +72,10 @@
         icon: tailscale.png
         href: https://login.tailscale.com/admin/machines
         description: Tailnet admin
+    - Beszel:
+        icon: beszel.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8090
+        description: Container & host monitoring
 
 - Health:
     - Vita:
