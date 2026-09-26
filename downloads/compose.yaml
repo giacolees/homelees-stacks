@@ -2,9 +2,10 @@
 #
 #   Seerr (click to request; runs in its own `requests` stack)
 #        -> Prowlarr (indexers)
-#        -> Sonarr / Radarr (search + import)
+#        -> Sonarr / Radarr / Chaptarr (search + import)
 #        -> qBittorrent (torrents, behind Gluetun VPN) and SABnzbd (Usenet)
 #   Bazarr (subtitles)
+#   Chaptarr (audiobooks + ebooks; Readarr successor)
 #
 # All config lives in ./config (gitignored). Media and downloads live on the
 # 18TB disk mounted at /mnt/media, exposed to every app as /data so that
@@ -149,4 +150,23 @@ services:
       - "127.0.0.1:6767:6767"
     volumes:
       - ./config/bazarr:/config
+      - /mnt/media:/data
+
+  # --- Audiobooks + ebooks (Readarr successor) ---
+  # Image tag pinned deliberately: `latest` trails the numbered releases and
+  # Chaptarr is still beta. Check https://hub.docker.com/r/chaptarr/chaptarr/tags
+  # and bump this tag on purpose (read the release notes first).
+  chaptarr:
+    image: chaptarr/chaptarr:0.9.958
+    container_name: chaptarr
+    <<: *arr
+    ports:
+      - "192.168.1.70:8789:8789"
+      - "127.0.0.1:8789:8789"
+    volumes:
+      - ./config/chaptarr:/config
+      # Single /mnt/media mount, exposed as /data (same as the other *arr
+      # apps). Root folders live under /data/Chaptarr so imports from
+      # /data/Downloads can be HARDLINKED — separate /audiobooks + /ebooks
+      # bind mounts would make `ln` fail with EXDEV across mount points.
       - /mnt/media:/data

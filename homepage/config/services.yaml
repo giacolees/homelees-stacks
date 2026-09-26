@@ -18,6 +18,10 @@
         icon: https://raw.githubusercontent.com/grimmory-tools/grimmory/main/frontend/public/icons/icon-144x144.png
         href: http://{{HOMEPAGE_VAR_HOST}}:6060
         description: Ebooks, comics & audiobooks
+    - Chaptarr:
+        icon: mdi-book-search
+        href: http://{{HOMEPAGE_VAR_HOST}}:8789
+        description: Audiobook & ebook automation
 
 - Media:
     - Jellyfin:

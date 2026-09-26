@@ -19,7 +19,7 @@ that reads/writes the same stacks (it replaced Dockge).
 ├── jellyfin/                 # media server (adopted from CasaOS)
 │   ├── compose.yaml
 │   └── .env                  # OPENAI_API_KEY (gitignored, mode 0600)
-├── downloads/                # *arr acquisition stack + Gluetun VPN
+├── downloads/                # *arr stack (Sonarr/Radarr/Chaptarr) + Gluetun VPN
 │   ├── compose.yaml
 │   ├── .env                  # VPN credentials (gitignored)
 │   └── config/               # per-app state (gitignored)
@@ -420,6 +420,7 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
 | Radarr      | `http://<node>.<tailnet>.ts.net:7878` |
 | Bazarr      | `http://<node>.<tailnet>.ts.net:6767` |
+| Chaptarr    | `http://<node>.<tailnet>.ts.net:8789` |
 | qBittorrent | `http://<node>.<tailnet>.ts.net:8080` |
 | SABnzbd     | `http://<node>.<tailnet>.ts.net:8081` |
 
@@ -520,11 +521,16 @@ Full layout on the 18TB disk:
 
 ```
 /mnt/media/
-├── Books/        # Jellyfin "Books" library
+├── Books/        # Jellyfin "Books" library (flat PDFs/EPUBs)
+├── Chaptarr/     # Chaptarr libraries: audiobooks/ and ebooks/ (managed)
 ├── Datasets/     # datasets / general storage (not a Jellyfin library)
+├── Downloads/    # qBittorrent / SABnzbd download area
+├── Grimmory/     # Grimmory: books/ library + bookdrop/ auto-import
 ├── Images/       # Jellyfin "Photos" library
+├── Immich/       # Immich uploads / thumbnails / encoded video
 ├── Movies/       # Jellyfin "Movies" library
 ├── Music/        # Jellyfin "Music" library
+├── Nextcloud/    # Nextcloud user data
 ├── TV Shows/     # Jellyfin "Shows" library
 └── Videos/       # Jellyfin "Home Videos" library
 ```
@@ -563,10 +569,11 @@ sudo findmnt --verify --verbose   # validate fstab
 
 The "click to request, and it lands in the right folder" flow:
 
-    Jellyseerr -> Prowlarr -> Sonarr / Radarr -> qBittorrent (via Gluetun VPN)
+    Seerr (requests stack) -> Sonarr / Radarr / Chaptarr
+                                              \-> qBittorrent (via Gluetun VPN)
                                               \-> SABnzbd (Usenet)
     Prowlarr -> FlareSolverr (Cloudflare / DDoS-GUARD bypass, internal only)
-    Bazarr -> subtitles
+    Bazarr -> subtitles (movies/TV)
 
 - Stack: `/opt/stacks/downloads/compose.yaml`
 - Request UI (**Seerr**) is **not** here; it runs in its own
@@ -575,7 +582,7 @@ The "click to request, and it lands in the right folder" flow:
 - Secrets: `/opt/stacks/downloads/.env` (VPN credentials, gitignored)
 - State: `/opt/stacks/downloads/config/<app>` (gitignored)
 - All apps mount the 18TB disk at `/data` (same filesystem as the libraries, so
-  Sonarr/Radarr **hardlink** imports instead of copying).
+  Sonarr/Radarr/Chaptarr **hardlink** imports instead of copying).
 - FlareSolverr (Cloudflare / DDoS-GUARD bypass for Prowlarr) has **no published
   port**; Prowlarr reaches it internally at `http://flaresolverr:8191`.
 
@@ -584,6 +591,7 @@ The "click to request, and it lands in the right folder" flow:
 | Prowlarr    | Indexer manager           | 9696      | `...:9696` |
 | Sonarr      | TV automation             | 8989      | `...:8989` |
 | Radarr      | Movies automation         | 7878      | `...:7878` |
+| Chaptarr    | Audiobooks + ebooks       | 8789      | `...:8789` |
 | Bazarr      | Subtitles                 | 6767      | `...:6767` |
 | qBittorrent | Torrents (behind Gluetun) | 8080      | `...:8080` |
 | SABnzbd     | Usenet                    | 8081      | `...:8081` |
@@ -607,12 +615,15 @@ Deploying the `downloads` stack from Komodo will also try to start them.
 - Downloads: `/data/Downloads/...` = `/mnt/media/Downloads/...`
 - Sonarr root folder: `/data/TV Shows` = `/mnt/media/TV Shows`
 - Radarr root folder: `/data/Movies` = `/mnt/media/Movies`
+- Chaptarr root folders: `/data/Chaptarr/audiobooks` and `/data/Chaptarr/ebooks`
+  = `/mnt/media/Chaptarr/{audiobooks,ebooks}`
 - Inside the stack, qBittorrent is at host `gluetun:8080`; SABnzbd at `sabnzbd:8080`.
 
 ### One-time setup order
 
 1. Complete the Jellyfin setup wizard, then create an API key.
-2. **Prowlarr**: add indexers, then Settings -> Apps -> add Sonarr & Radarr.
+2. **Prowlarr**: add indexers, then Settings -> Apps -> add Sonarr & Radarr
+   (and Chaptarr/Readarr if Prowlarr lists it).
    Add the Cloudflare solver under Settings -> Indexers -> Add Indexer ->
    FlareSolverr (host `http://flaresolverr:8191`, tag `flaresolverr`).
 3. **qBittorrent** (after the VPN is up): set the admin password.
@@ -621,8 +632,48 @@ Deploying the `downloads` stack from Komodo will also try to start them.
 5. **Radarr**: root folder `/data/Movies`; add qBittorrent.
 6. **SABnzbd**: add your Usenet server; add it as a download client in Sonarr/Radarr.
 7. **Bazarr**: add languages + subtitle providers; connect Sonarr/Radarr.
-8. **Jellyseerr**: sign in with Jellyfin, connect Sonarr/Radarr.
-9. In Jellyfin, scan libraries so imported media appears.
+8. **Chaptarr**: set the admin account on first launch; add root folders
+   `/data/Chaptarr/audiobooks` and `/data/Chaptarr/ebooks`; add qBittorrent
+   (host `gluetun`, port `8080`) and/or SABnzbd (`sabnzbd`, port `8080`) as
+   download clients; add an indexer (Prowlarr Sync or manual).
+9. **Seerr** (`requests` stack): sign in with Jellyfin, connect Sonarr/Radarr.
+10. In Jellyfin, scan libraries so imported media appears.
+
+### Chaptarr (audiobooks + ebooks)
+
+A Readarr successor (community fork) that manages audiobook and ebook
+libraries with the usual *arr indexers, download clients, and quality/metadata
+profiles. It runs as a service in this stack.
+
+- URL (LAN): http://192.168.1.70:8789
+- URL (tailnet): `http://<node>.<tailnet>.ts.net:8789`
+- Image: `chaptarr/chaptarr:0.9.958` (pinned in `compose.yaml`; the `latest`
+  tag trails the numbered releases and the project is still beta)
+- State / DB: `/opt/stacks/downloads/config/chaptarr` (SQLite, gitignored)
+- Libraries (18TB disk):
+  - `/mnt/media/Chaptarr/audiobooks` -> container `/data/Chaptarr/audiobooks`
+  - `/mnt/media/Chaptarr/ebooks` -> container `/data/Chaptarr/ebooks`
+- Download clients (Docker DNS inside this stack): qBittorrent at
+  `gluetun:8080`, SABnzbd at `sabnzbd:8080`
+- `PUID`/`PGID` come from the shared `x-arr` anchor (1000:1000)
+
+Because Chaptarr mounts `/mnt/media` at `/data` (instead of separate
+`/audiobooks` + `/ebooks` mounts), imports from `/data/Downloads` are
+**hardlinked** rather than copied. Keep new root folders under `/data`.
+
+First run: open the URL, set the admin username/password, then add the root
+folders and download clients above.
+
+Lifecycle (same as the rest of the stack):
+
+```bash
+cd /opt/stacks/downloads
+sudo docker compose config
+sudo docker compose ps chaptarr
+sudo docker compose logs -f --tail=100 chaptarr
+# update: bump the tag in compose.yaml, then
+sudo docker compose pull chaptarr && sudo docker compose up -d chaptarr
+```
 
 ## Requests / Seerr stack
 
