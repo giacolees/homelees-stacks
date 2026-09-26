@@ -12,6 +12,10 @@
         icon: immich.png
         href: http://{{HOMEPAGE_VAR_HOST}}:2283
         description: Photo & video backup (mobile app)
+    - Memories:
+        icon: memories.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8082/apps/memories
+        description: Photos (Nextcloud)
 
 - Reading:
     - Grimmory:

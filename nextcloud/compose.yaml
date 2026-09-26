@@ -27,7 +27,13 @@ services:
       - /home/nextcloud/redis:/data
 
   app:
-    image: nextcloud:stable-apache
+    # Built from ./Dockerfile (extends nextcloud:stable-apache with the
+    # ffmpeg/exiftool binaries that Memories needs). Update the base with:
+    #   docker compose build --pull && docker compose up -d
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: homelees/nextcloud:apache-memories
     container_name: nextcloud
     restart: unless-stopped
     depends_on:
