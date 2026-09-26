@@ -534,7 +534,6 @@ Full layout on the 18TB disk:
 ├── Movies/       # Jellyfin "Movies" library
 ├── Music/        # Jellyfin "Music" library
 ├── Nextcloud/    # Nextcloud user data
-├── Shelfarr/     # Shelfarr request outputs: audiobooks/ & ebooks/
 ├── TV Shows/     # Jellyfin "Shows" library
 └── Videos/       # Jellyfin "Home Videos" library
 ```
@@ -741,6 +740,9 @@ sudo docker compose pull && sudo docker compose up -d   # update
 2. Create a library and point its "Book Folders" at `/books`.
 3. (Optional) drop files into `/bookdrop` for automatic metadata import.
 
+The **Books** library (`/books`, watch enabled) is configured; Shelfarr writes
+finished books to `/books/{ebooks,audiobooks}`, which Grimmory auto-indexes.
+
 The version is pinned in `.env` via `GRIMMORY_VERSION`; the schema migrates
 automatically on start.
 
@@ -755,8 +757,8 @@ At `/opt/stacks/shelfarr`.
 - URL (tailnet): `http://<node>.<tailnet>.ts.net:5056`
 - Image: `ghcr.io/pedro-revez-silva/shelfarr:2026.09.18.1` (pinned in `.env`)
 - App data / SQLite / secret key: `/home/shelfarr/data` (SSD)
-- Audiobook output: `/mnt/media/Shelfarr/audiobooks` (18TB disk)
-- Ebook output: `/mnt/media/Shelfarr/ebooks` (18TB disk)
+- Output: finished books are delivered straight into the Grimmory library at
+  `/mnt/media/Grimmory/books/{audiobooks,ebooks}` (Grimmory watches it)
 - Downloads: `/mnt/media/Downloads` mounted at `/downloads`
 - Networks: `downloads_default` (Prowlarr, `gluetun:8080`, `sabnzbd:8080`) and
   `grimmory_default` (`grimmory:6060`)
@@ -779,10 +781,11 @@ sudo docker compose pull && sudo docker compose up -d   # update
 3. **Admin -> Download Clients**: add qBittorrent (`gluetun`, port `8080`)
    and/or SABnzbd (`sabnzbd`, port `8080`), reusing the credentials in
    `/opt/stacks/downloads/.env`.
-4. **Admin -> Settings -> Output Paths**: defaults are `/audiobooks`, `/ebooks`
-   and `/downloads`, which match the mounts above.
-5. (Optional) **Library Platform**: point it at Grimmory
-   (`http://grimmory:6060`) or Audiobookshelf so completed books get scanned.
+4. **Admin -> Settings -> Output Paths**: already set to `/grimmory-books/ebooks`
+   and `/grimmory-books/audiobooks`, both inside the watched Grimmory library.
+5. (Optional) **Library Platform**: point it at Grimmory (`http://grimmory:6060`,
+   admin credentials) so Shelfarr can list the library and trigger rescans; the
+   folder watch already imports new books without this.
 
 The optional Audible Backup companion (`shelfarr-libation`) is not deployed;
 add it from the upstream compose example if you want that beta integration.
