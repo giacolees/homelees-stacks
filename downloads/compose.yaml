@@ -107,6 +107,14 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
     container_name: flaresolverr
     restart: unless-stopped
+    # The router's DNS (192.168.1.254) blackholes annas-archive.gl to 127.0.0.1
+    # (ISP-level piracy block). FlareSolverr is what fetches Anna's Archive for
+    # Shelfarr, so give it a public resolver to bypass the DNS-level block;
+    # IP-level access to the real host works. Container-name DNS still uses
+    # Docker's embedded resolver (127.0.0.11), which forwards here.
+    dns:
+      - 1.1.1.1
+      - 9.9.9.9
     environment:
       - TZ=Europe/Rome
       - LOG_LEVEL=info
