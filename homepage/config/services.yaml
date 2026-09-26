@@ -24,8 +24,8 @@
         icon: jellyfin.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8096
         description: Movies, TV, music, books
-    - Jellyseerr:
-        icon: jellyseerr.png
+    - Seerr:
+        icon: seerr.png
         href: http://{{HOMEPAGE_VAR_HOST}}:5055
         description: Request movies & shows
     - Bazarr:
@@ -64,12 +64,6 @@
         icon: komodo.png
         href: http://{{HOMEPAGE_VAR_HOST}}:9120
         description: Containers, builds & deploys
-        widget:
-            type: komodo
-            url: http://192.168.1.70:9120
-            key: "{{HOMEPAGE_VAR_KOMODO_KEY}}"
-            secret: "{{HOMEPAGE_VAR_KOMODO_SECRET}}"
-            showSummary: true
     - Tailscale:
         icon: tailscale.png
         href: https://login.tailscale.com/admin/machines

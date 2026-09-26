@@ -23,6 +23,9 @@ that reads/writes the same stacks (it replaced Dockge).
 │   ├── compose.yaml
 │   ├── .env                  # VPN credentials (gitignored)
 │   └── config/               # per-app state (gitignored)
+├── requests/                 # Seerr request UI (user-facing, own stack)
+│   ├── compose.yaml
+│   └── config/               # Seerr state (gitignored)
 ├── homepage/                 # dashboard (links to every app)
 │   ├── compose.yaml
 │   └── config/               # services.yaml, settings.yaml, widgets.yaml
@@ -230,7 +233,7 @@ the Komodo widget's API key/secret live in the gitignored
 `/opt/stacks/homepage/.env` and reach the container as `HOMEPAGE_VAR_KOMODO_*`.
 
 - URL (LAN): http://192.168.1.70:3000
-- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:3000
+- URL (tailnet): http://homelees.lungfish-pike.ts.net:3000
 - Stack: `/opt/stacks/homepage/compose.yaml`
 
 All card links use `HOMEPAGE_VAR_HOST` (set in `compose.yaml`), currently the
@@ -276,7 +279,7 @@ Komodo manages the same `/opt/stacks` directory as the CLI (Files-on-Host
 mode), plus containers, builds and git-based deploys. It replaced Dockge.
 
 - URL (LAN): **http://192.168.1.70:9120**
-- URL (tailnet): `http://homelees-1.lungfish-pike.ts.net:9120`
+- URL (tailnet): `http://homelees.lungfish-pike.ts.net:9120`
 - Stack: `/home/giacolees/komodo/mongo.compose.yaml` (Core + Periphery + Mongo)
 - Config/secrets: `/home/giacolees/komodo/compose.env` (mode 0600)
 - Admin login: created on first launch; credentials in `compose.env`
@@ -412,7 +415,7 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
 | Immich      | `http://<node>.<tailnet>.ts.net:2283` |
 | Grimmory    | `http://<node>.<tailnet>.ts.net:6060` |
-| Jellyseerr  | `http://<node>.<tailnet>.ts.net:5055` |
+| Seerr       | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
 | Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
 | Radarr      | `http://<node>.<tailnet>.ts.net:7878` |
@@ -566,6 +569,9 @@ The "click to request, and it lands in the right folder" flow:
     Bazarr -> subtitles
 
 - Stack: `/opt/stacks/downloads/compose.yaml`
+- Request UI (**Seerr**) is **not** here; it runs in its own
+  `/opt/stacks/requests` stack, reaching Sonarr/Radarr over `downloads_default`
+  and Jellyfin over `media_net`.
 - Secrets: `/opt/stacks/downloads/.env` (VPN credentials, gitignored)
 - State: `/opt/stacks/downloads/config/<app>` (gitignored)
 - All apps mount the 18TB disk at `/data` (same filesystem as the libraries, so
@@ -575,7 +581,6 @@ The "click to request, and it lands in the right folder" flow:
 
 | App         | Purpose                   | Host port | Tailnet URL |
 |-------------|---------------------------|-----------|-------------|
-| Jellyseerr  | Request UI ("click")      | 5055      | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | Indexer manager           | 9696      | `...:9696` |
 | Sonarr      | TV automation             | 8989      | `...:8989` |
 | Radarr      | Movies automation         | 7878      | `...:7878` |
@@ -619,12 +624,26 @@ Deploying the `downloads` stack from Komodo will also try to start them.
 8. **Jellyseerr**: sign in with Jellyfin, connect Sonarr/Radarr.
 9. In Jellyfin, scan libraries so imported media appears.
 
+## Requests / Seerr stack
+
+The user-facing request portal ("click to request"), split out of `downloads`
+so it is decoupled from the acquisition + VPN stack.
+
+- Stack: `/opt/stacks/requests/compose.yaml`
+- Image: `ghcr.io/seerr-team/seerr:v3.4.1` (unified Overseerr + Jellyseerr)
+- State: `/opt/stacks/requests/config/jellyseerr` (gitignored)
+- URL (LAN): http://192.168.1.70:5055
+- URL (tailnet): `http://<node>.<tailnet>.ts.net:5055`
+- External networks:
+  - `media_net` -> Jellyfin (`http://jellyfin:8096`) for auth + library sync
+  - `downloads_default` -> Sonarr/Radarr (`http://sonarr:8989`, `http://radarr:7878`)
+
 ## Nextcloud
 
 Personal cloud (files, photos, calendar) at `/opt/stacks/nextcloud`.
 
 - URL (LAN): http://192.168.1.70:8082
-- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:8082
+- URL (tailnet): http://homelees.lungfish-pike.ts.net:8082
 - App/config: `/home/nextcloud/config` (SSD)
 - Database (MariaDB): `/home/nextcloud/db` (SSD)
 - Redis: `/home/nextcloud/redis` (SSD)
@@ -652,7 +671,7 @@ Self-hosted photo & video library with a mobile app for background upload
 (the Google Photos replacement). At `/opt/stacks/immich`.
 
 - URL (LAN): http://192.168.1.70:2283
-- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:2283
+- URL (tailnet): http://homelees.lungfish-pike.ts.net:2283
 - Images: `ghcr.io/immich-app/immich-server:v3.2.2` and
   `immich-machine-learning:v3.2.2`, plus Valkey 9 and Immich's PostgreSQL 14
   (VectorChord + pgvecto.rs)
@@ -688,7 +707,7 @@ Self-hosted library for ebooks, comics and audiobooks (the successor to
 BookLore; Kobo/KOReader sync, OPDS, built-in reader). At `/opt/stacks/grimmory`.
 
 - URL (LAN): http://192.168.1.70:6060
-- URL (tailnet): http://homelees-1.lungfish-pike.ts.net:6060
+- URL (tailnet): http://homelees.lungfish-pike.ts.net:6060
 - Images: `grimmory/grimmory:v3.5.0` + `lscr.io/linuxserver/mariadb:11.4.8`
 - App data (settings, metadata cache): `/home/grimmory/data` (SSD)
 - Database: `/home/grimmory/mariadb/config` (SSD)

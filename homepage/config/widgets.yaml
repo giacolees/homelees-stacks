@@ -1,6 +1,7 @@
 # Server status (host CPU / RAM / disk / uptime) via the Glances container.
 # `version: 4` matches the Glances 4.x image. `disk` entries are mount points
 # as seen by Glances (host root mounted at /host, media disk at /mnt/media).
+# Only the NVMe data partition and the 16TB media disk are shown.
 - glances:
     url: http://glances:61208
     version: 4
@@ -10,9 +11,8 @@
     uptime: true
     cputemp: true
     disk:
-      - /host
-      - /host/var
-      - /mnt/media
+      - /host/home # NVMe main data partition (~881 GiB)
+      - /mnt/media # 16TB media drive
     diskUnits: bbytes
     expanded: true
 

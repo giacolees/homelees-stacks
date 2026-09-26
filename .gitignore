@@ -35,3 +35,6 @@ homepage/config/*
 !homepage/config/settings.yaml
 !homepage/config/widgets.yaml
 !homepage/config/bookmarks.yaml
+
+# Cloned app repo (has its own .git)
+/wellness/

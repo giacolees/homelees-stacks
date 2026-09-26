@@ -1,6 +1,6 @@
 # Media acquisition stack
 #
-#   Jellyseerr (click to request)
+#   Seerr (click to request; runs in its own `requests` stack)
 #        -> Prowlarr (indexers)
 #        -> Sonarr / Radarr (search + import)
 #        -> qBittorrent (torrents, behind Gluetun VPN) and SABnzbd (Usenet)
@@ -43,14 +43,14 @@ services:
       - TZ=Europe/Rome
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
       - VPN_TYPE=${VPN_TYPE:-wireguard}
-      # WireGuard
+      # WireGuard (ProtonVPN: only the private key is needed)
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
-      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       # OpenVPN (only needed if VPN_TYPE=openvpn)
       - OPENVPN_USER=${OPENVPN_USER}
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       # Optional server selection
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - FREE_ONLY=${FREE_ONLY:-off}
       # Allow the Web UI through the firewall; allow torrent port from the VPN
       - FIREWALL_INPUT_PORTS=8080
       - FIREWALL_VPN_INPUT_PORTS=6881
@@ -150,18 +150,3 @@ services:
     volumes:
       - ./config/bazarr:/config
       - /mnt/media:/data
-
-  # --- Request front-end (the "click" UI) ---
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
-    restart: unless-stopped
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Rome
-    ports:
-      - "192.168.1.70:5055:5055"
-      - "127.0.0.1:5055:5055"
-    volumes:
-      - ./config/jellyseerr:/app/config

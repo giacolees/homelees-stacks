@@ -37,3 +37,12 @@ services:
       # DLNA discovery (LAN only)
       - "192.168.1.70:1900:1900/udp"
       - "192.168.1.70:7359:7359/udp"
+    networks:
+      - default
+      # Shared network so the requests stack (Seerr) can reach Jellyfin
+      # by container name (http://jellyfin:8096) without host-port firewalling.
+      - media_net
+
+networks:
+  media_net:
+    external: true

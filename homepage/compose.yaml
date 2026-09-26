@@ -14,12 +14,12 @@ services:
       - TZ=Europe/Rome
       # Change this to 192.168.1.70 if you prefer LAN-IP links (works only at
       # home). The MagicDNS name works from anywhere over Tailscale.
-      - HOMEPAGE_VAR_HOST=homelees-1.lungfish-pike.ts.net
+      - HOMEPAGE_VAR_HOST=homelees.lungfish-pike.ts.net
       # Komodo API key/secret for the Management widget. Kept out of git via .env.
       - HOMEPAGE_VAR_KOMODO_KEY=${KOMODO_API_KEY}
       - HOMEPAGE_VAR_KOMODO_SECRET=${KOMODO_API_SECRET}
       # Hosts allowed to load the dashboard (Next.js host check).
-      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.70:3000,homelees-1.lungfish-pike.ts.net:3000,100.87.187.75:3000,localhost:3000,127.0.0.1:3000
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.70:3000,homelees.lungfish-pike.ts.net:3000,100.87.187.75:3000,localhost:3000,127.0.0.1:3000
     volumes:
       - ./config:/app/config
     ports:

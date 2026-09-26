@@ -1,0 +1,43 @@
+# Request front-end ("the click UI") for the media pipeline.
+#
+#   Seerr (this stack) -- requests --> Sonarr / Radarr   (downloads stack)
+#                      \-- auth/lib --> Jellyfin         (jellyfin stack)
+#
+# Split out of the `downloads` stack so the user-facing request portal is
+# decoupled from the acquisition + VPN stack. Seerr has no download clients or
+# VPN of its own; it only needs network access to:
+#   - Sonarr / Radarr -> downloads_default (external)
+#   - Jellyfin        -> media_net         (external)
+#
+# Config lives in ./config/jellyseerr (gitignored). Ports are bound to the LAN
+# address + loopback only; remote access is via `tailscale serve`.
+# See /opt/stacks/README.md.
+name: requests
+
+services:
+  jellyseerr:
+    image: ghcr.io/seerr-team/seerr:v3.4.1
+    container_name: jellyseerr
+    init: true
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Rome
+    ports:
+      - "192.168.1.70:5055:5055"
+      - "127.0.0.1:5055:5055"
+    volumes:
+      - ./config/jellyseerr:/app/config
+    networks:
+      # Jellyfin (media server) for auth + library sync.
+      - media_net
+      # Sonarr / Radarr, so requests can be handed off across stacks.
+      - downloads_net
+
+networks:
+  # Shared with the jellyfin stack.
+  media_net:
+    external: true
+  # The downloads stack's default network (project `downloads`).
+  downloads_net:
+    external: true
+    name: downloads_default
