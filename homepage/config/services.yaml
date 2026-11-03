@@ -34,6 +34,10 @@
         icon: navidrome.png
         href: http://{{HOMEPAGE_VAR_HOST}}:4533
         description: Music streaming (Subsonic)
+    - Octo:
+        icon: https://raw.githubusercontent.com/winters27/octo/main/octo/Assets/octo_logo.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:5274
+        description: Subsonic discovery & streaming proxy
     - Aurral:
         icon: mdi-music-clef-treble
         href: http://{{HOMEPAGE_VAR_HOST}}:3001

@@ -13,7 +13,7 @@ layout:
     columns: 2
   Music:
     style: row
-    columns: 2
+    columns: 3
   Media:
     style: row
     columns: 3
