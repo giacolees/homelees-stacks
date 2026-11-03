@@ -1,0 +1,50 @@
+# Navidrome - fast, lightweight Subsonic/OpenSubsonic music server & web player.
+#
+# Storage layout (all on the NVMe SSD /home for zero spin-up latency):
+#   - App state, SQLite DB, image & transcode cache: /home/navidrome/data -> /config
+#   - Music library (shared with Aurral at /data):   /home/navidrome/music -> /data:ro
+#
+# Using /data for the music mount in both Navidrome and Aurral ensures that
+# file paths reported by Aurral (/data/...) match Navidrome's container paths
+# 1:1 without needing remote path mappings.
+#
+# Ports are bound to the LAN address + loopback only. Off-LAN access is via
+# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+name: navidrome
+
+services:
+  navidrome:
+    image: deluan/navidrome:${NAVIDROME_VERSION}
+    container_name: navidrome
+    user: "1000:1000"
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - ND_DATAFOLDER=/config
+      - ND_CACHEFOLDER=/config/cache
+      - ND_MUSICFOLDER=/data
+      # Low-latency & fast indexing tuning (NVMe SSD)
+      - ND_SCANSCHEDULE=@every 5m
+      - ND_SCANNER_WATCHERWAIT=5s
+      - ND_SCANNER_PURGEMISSING=always
+      - ND_IMAGECACHESIZE=500MB
+      - ND_TRANSCODINGCACHESIZE=2GB
+      - ND_ENABLETRANSCODINGCONFIG=true
+      - ND_ENABLESHARING=true
+      - ND_ENABLESTARRATING=true
+      - ND_SESSIONTIMEOUT=168h
+      - ND_LASTFM_APIKEY=${ND_LASTFM_APIKEY:-}
+      - ND_LASTFM_SECRET=${ND_LASTFM_SECRET:-}
+    ports:
+      # LAN + loopback (loopback is used by `tailscale serve`)
+      - "192.168.1.70:4533:4533"
+      - "127.0.0.1:4533:4533"
+    volumes:
+      - /home/navidrome/data:/config
+      - /home/navidrome/music:/data:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:4533/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

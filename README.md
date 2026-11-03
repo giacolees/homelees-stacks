@@ -32,10 +32,6 @@ that reads/writes the same stacks (it replaced Dockge).
 ├── nextcloud/                # files/photos/calendar
 │   ├── compose.yaml
 │   └── .env                  # DB/admin passwords (gitignored)
-├── immich/                   # photo & video library (mobile backup)
-│   ├── compose.yaml
-│   ├── .env                  # DB password (gitignored, mode 0600)
-│   └── .env.example          # committed template with placeholders
 ├── grimmory/                 # ebooks/comics/audiobooks library
 │   ├── compose.yaml
 │   ├── .env                  # DB passwords (gitignored, mode 0600)
@@ -47,6 +43,18 @@ that reads/writes the same stacks (it replaced Dockge).
 ├── beszel/                   # host + per-container monitoring (hub + agent)
 │   ├── compose.yaml
 │   ├── .env                  # admin password + agent key/token (gitignored, 0600)
+│   └── .env.example          # committed template with placeholders
+├── ferdium/                  # Ferdium client sync & recipe server
+│   ├── compose.yaml
+│   ├── .env                  # runtime config (gitignored, mode 0600)
+│   └── .env.example          # committed template with placeholders
+├── navidrome/                # Subsonic/OpenSubsonic music server & web player
+│   ├── compose.yaml
+│   ├── .env                  # version pin & optional Last.fm keys (gitignored, 0600)
+│   └── .env.example          # committed template with placeholders
+├── aurral/                   # AI music discovery, scheduled flows & auto-downloader
+│   ├── compose.yaml
+│   ├── .env                  # version pin (gitignored, mode 0600)
 │   └── .env.example          # committed template with placeholders
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
@@ -422,7 +430,6 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
 | Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
 | Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
-| Immich      | `http://<node>.<tailnet>.ts.net:2283` |
 | Grimmory    | `http://<node>.<tailnet>.ts.net:6060` |
 | Seerr       | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
@@ -432,6 +439,9 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Shelfarr    | `http://<node>.<tailnet>.ts.net:5056` |
 | qBittorrent | `http://<node>.<tailnet>.ts.net:8080` |
 | SABnzbd     | `http://<node>.<tailnet>.ts.net:8081` |
+| Ferdium     | `http://<node>.<tailnet>.ts.net:3333` |
+| Navidrome   | `http://<node>.<tailnet>.ts.net:4533` |
+| Aurral      | `http://<node>.<tailnet>.ts.net:3001` |
 
 `tailscale-serve.service` waits for login and applies the config
 automatically. To re-apply manually:
@@ -535,7 +545,6 @@ Full layout on the 18TB disk:
 ├── Downloads/    # qBittorrent / SABnzbd download area
 ├── Grimmory/     # Grimmory: books/ library + bookdrop/ auto-import
 ├── Images/       # Jellyfin "Photos" library
-├── Immich/       # Immich uploads / thumbnails / encoded video
 ├── Movies/       # Jellyfin "Movies" library
 ├── Music/        # Jellyfin "Music" library
 ├── Nextcloud/    # Nextcloud user data
@@ -697,42 +706,6 @@ sudo docker exec -u www-data nextcloud php occ status
 sudo docker exec -u www-data nextcloud php occ config:system:get trusted_domains
 ```
 
-## Immich
-
-Self-hosted photo & video library with a mobile app for background upload
-(the Google Photos replacement). At `/opt/stacks/immich`.
-
-- URL (LAN): http://192.168.1.70:2283
-- URL (tailnet): http://homelees.lungfish-pike.ts.net:2283
-- Images: `ghcr.io/immich-app/immich-server:v3.2.2` and
-  `immich-machine-learning:v3.2.2`, plus Valkey 9 and Immich's PostgreSQL 14
-  (VectorChord + pgvecto.rs)
-- Library (uploads, thumbnails, encoded video): `/mnt/media/Immich` (18TB disk)
-- Database + ML model cache: named volumes `immich_pgdata` and
-  `immich_model-cache` (SSD — Docker data-root `/home/docker`)
-- Secrets: `/opt/stacks/immich/.env` (gitignored, mode 0600) — holds `DB_PASSWORD`
-- Transcoding uses the AMD Radeon Vega iGPU via VAAPI (`/dev/dri`); machine
-  learning runs on CPU (AMD integrated GPUs are not supported for ML)
-- Port 2283 is bound to the LAN address + loopback, filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
-
-```bash
-cd /opt/stacks/immich
-sudo docker compose config
-sudo docker compose ps
-sudo docker compose logs -f --tail=100
-sudo docker compose pull && sudo docker compose up -d   # update
-```
-
-### First run
-
-1. Open the URL and create the first user — this account becomes the admin.
-2. Install the Immich mobile app and point it at the URL, then enable backup.
-
-The Immich version is pinned in `.env` via `IMMICH_VERSION`. Bump it
-deliberately and read the release notes before pulling, since Immich requires
-occasional database migrations.
-
 ## Grimmory
 
 Self-hosted library for ebooks, comics and audiobooks (the successor to
@@ -848,6 +821,87 @@ per-system registration token (`BESZEL_AGENT_TOKEN`). To add another machine,
 use **Add System** in the hub UI and paste the generated key/token into `.env`.
 The hub's public key can also be derived from `/home/beszel/data/id_ed25519`
 with `ssh-keygen -y -f /home/beszel/data/id_ed25519`.
+
+## Ferdium Server
+
+Self-hosted sync and recipe server for Ferdium desktop clients (`ferdium/ferdium-server`).
+At `/opt/stacks/ferdium`.
+
+- URL (LAN): http://192.168.1.70:3333
+- URL (tailnet): `http://homelees.lungfish-pike.ts.net:3333`
+- User Dashboard: `/user/login` (`/user/account`, `/user/data`, `/user/export`, `/import`, `/new`)
+- Image: `ferdium/ferdium-server:2.0.14` (pinned in `.env`)
+- Database (SQLite), app key & JWT PEM keys: `/home/ferdium/data` (SSD)
+- Recipes store & archives: `/home/ferdium/recipes` (SSD)
+- Port 3333 is bound to LAN + loopback and filtered by
+  `docker-published-firewall.service`; remote access is via `tailscale serve`
+
+```bash
+cd /opt/stacks/ferdium
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
+
+### Connecting a Ferdium Client
+
+1. In the Ferdium desktop app, click the settings gear icon (or on the welcome screen, click **Change Server**).
+2. Select **Custom Server** and enter:
+   - `http://homelees.lungfish-pike.ts.net:3333` (works everywhere on your tailnet) or `http://192.168.1.70:3333` (LAN only).
+3. Create your account (or sign in on additional devices to sync all services and workspaces).
+4. Optional: once your personal account is created, you can set `IS_REGISTRATION_ENABLED=false` in `/opt/stacks/ferdium/.env` and run `sudo docker compose up -d` to disable new user sign-ups.
+
+## Navidrome & Aurral (Music Streaming + AI Discovery)
+
+Low-latency, Spotify-like self-hosted music stack split across two companion
+services: **Navidrome** (`/opt/stacks/navidrome`) for Subsonic/OpenSubsonic
+streaming and web playback, and **Aurral** (`/opt/stacks/aurral`) for AI/taste
+discovery, scheduled playlist "Flows", and automated track acquisition.
+
+Both services store their databases, caches, and the shared music library on
+the fast NVMe SSD (`/home/navidrome/music`, mounted at `/data` in both
+containers) so playback starts with 0 ms disk spin-up delay and paths match 1:1
+without remote path mappings.
+
+### Navidrome
+
+- URL (LAN): http://192.168.1.70:4533
+- URL (tailnet): `http://homelees.lungfish-pike.ts.net:4533`
+- Image: `deluan/navidrome:0.64.2` (pinned in `.env`)
+- App data, SQLite DB & transcode/image caches: `/home/navidrome/data` -> `/config` (SSD)
+- Music library (read-only mount): `/home/navidrome/music` -> `/data:ro` (SSD)
+- Port 4533 is bound to LAN + loopback and filtered by
+  `docker-published-firewall.service`; remote access is via `tailscale serve`
+
+```bash
+cd /opt/stacks/navidrome
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
+
+### Aurral
+
+- URL (LAN): http://192.168.1.70:3001
+- URL (tailnet): `http://homelees.lungfish-pike.ts.net:3001`
+- Image: `ghcr.io/lklynet/aurral:2.13.0` (pinned in `.env`)
+- App DB, settings, jobs & yt-dlp staging: `/home/aurral/config` -> `/config` (SSD)
+- Shared music root (read/write): `/home/navidrome/music` -> `/data` (SSD)
+- Optional Usenet/torrent completed folder: `/mnt/media/Downloads` -> `/downloads`
+- Networks: `navidrome_default` (reaches Navidrome at `http://navidrome:4533`)
+  and `downloads_default` (reaches SABnzbd / Prowlarr / qBittorrent if enabled)
+- Port 3001 is bound to LAN + loopback and filtered by
+  `docker-published-firewall.service`; remote access is via `tailscale serve`
+
+```bash
+cd /opt/stacks/aurral
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+```
 
 ## Backups
 

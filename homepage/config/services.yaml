@@ -1,6 +1,12 @@
 # All links use {{HOMEPAGE_VAR_HOST}}, set in compose.yaml.
 # Server status is provided by the Glances info widget (widgets.yaml).
 
+- Sync:
+    - Ferdium:
+        icon: ferdium.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:3333
+        description: Client sync & workspaces
+
 - Files:
     - Nextcloud:
         icon: nextcloud.png
@@ -8,10 +14,6 @@
         description: Files, photos, calendar
 
 - Photos:
-    - Immich:
-        icon: immich.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:2283
-        description: Photo & video backup (mobile app)
     - Memories:
         icon: memories.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8082/apps/memories
@@ -27,6 +29,16 @@
         href: http://{{HOMEPAGE_VAR_HOST}}:5056
         description: Request ebooks & audiobooks
 
+- Music:
+    - Navidrome:
+        icon: navidrome.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:4533
+        description: Music streaming (Subsonic)
+    - Aurral:
+        icon: mdi-music-clef-treble
+        href: http://{{HOMEPAGE_VAR_HOST}}:3001
+        description: AI music discovery & flows
+
 - Media:
     - Jellyfin:
         icon: jellyfin.png
@@ -40,6 +52,24 @@
         icon: bazarr.png
         href: http://{{HOMEPAGE_VAR_HOST}}:6767
         description: Subtitles
+
+- Management:
+    - Cockpit:
+        icon: cockpit.png
+        href: https://{{HOMEPAGE_VAR_HOST}}:9090
+        description: Server management
+    - Komodo:
+        icon: komodo.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:9120
+        description: Containers & deploys
+    - Tailscale:
+        icon: tailscale.png
+        href: https://login.tailscale.com/admin/machines
+        description: Tailnet admin
+    - Beszel:
+        icon: beszel.png
+        href: http://{{HOMEPAGE_VAR_HOST}}:8090
+        description: Host & container stats
 
 - Downloads:
     - Sonarr:
@@ -62,24 +92,6 @@
         icon: sabnzbd.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8081
         description: Usenet
-
-- Management:
-    - Cockpit:
-        icon: cockpit.png
-        href: https://{{HOMEPAGE_VAR_HOST}}:9090
-        description: Server management
-    - Komodo:
-        icon: komodo.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:9120
-        description: Containers, builds & deploys
-    - Tailscale:
-        icon: tailscale.png
-        href: https://login.tailscale.com/admin/machines
-        description: Tailnet admin
-    - Beszel:
-        icon: beszel.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8090
-        description: Container & host monitoring
 
 - Health:
     - Vita:

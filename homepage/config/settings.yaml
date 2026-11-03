@@ -5,15 +5,27 @@ color: slate
 headerStyle: boxed
 statusStyle: dot
 layout:
+  Sync:
+    style: row
+    columns: 1
   Reading:
+    style: row
+    columns: 2
+  Music:
     style: row
     columns: 2
   Media:
     style: row
     columns: 3
+  Management:
+    style: row
+    columns: 4
   Downloads:
     style: row
     columns: 5
-  Management:
-    style: row
-    columns: 3
+  Files:
+    style: column
+  Photos:
+    style: column
+  Health:
+    style: column
