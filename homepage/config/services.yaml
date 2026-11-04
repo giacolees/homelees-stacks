@@ -19,16 +19,6 @@
         href: http://{{HOMEPAGE_VAR_HOST}}:8082/apps/memories
         description: Photos (Nextcloud)
 
-- Reading:
-    - Grimmory:
-        icon: https://raw.githubusercontent.com/grimmory-tools/grimmory/main/frontend/public/icons/icon-144x144.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:6060
-        description: Ebooks, comics & audiobooks
-    - Shelfarr:
-        icon: mdi-bookshelf
-        href: http://{{HOMEPAGE_VAR_HOST}}:5056
-        description: Request ebooks & audiobooks
-
 - Music:
     - Navidrome:
         icon: navidrome.png

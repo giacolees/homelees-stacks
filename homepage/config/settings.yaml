@@ -8,9 +8,6 @@ layout:
   Sync:
     style: row
     columns: 1
-  Reading:
-    style: row
-    columns: 2
   Music:
     style: row
     columns: 2

@@ -32,11 +32,9 @@ that reads/writes the same stacks (it replaced Dockge).
 ├── nextcloud/                # files/photos/calendar
 │   ├── compose.yaml
 │   └── .env                  # DB/admin passwords (gitignored)
-├── grimmory/                 # ebooks/comics/audiobooks library
 │   ├── compose.yaml
 │   ├── .env                  # DB passwords (gitignored, mode 0600)
 │   └── .env.example          # committed template with placeholders
-├── shelfarr/                 # book request UI ("Jellyseerr for books")
 │   ├── compose.yaml
 │   ├── .env                  # version pin (gitignored, mode 0600)
 │   └── .env.example          # committed template with placeholders
@@ -430,13 +428,11 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
 | Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
 | Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
-| Grimmory    | `http://<node>.<tailnet>.ts.net:6060` |
 | Seerr       | `http://<node>.<tailnet>.ts.net:5055` |
 | Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
 | Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
 | Radarr      | `http://<node>.<tailnet>.ts.net:7878` |
 | Bazarr      | `http://<node>.<tailnet>.ts.net:6767` |
-| Shelfarr    | `http://<node>.<tailnet>.ts.net:5056` |
 | qBittorrent | `http://<node>.<tailnet>.ts.net:8080` |
 | SABnzbd     | `http://<node>.<tailnet>.ts.net:8081` |
 | Ferdium     | `http://<node>.<tailnet>.ts.net:3333` |
@@ -543,7 +539,7 @@ Full layout on the 18TB disk:
 ├── Books/        # Jellyfin "Books" library (flat PDFs/EPUBs)
 ├── Datasets/     # datasets / general storage (not a Jellyfin library)
 ├── Downloads/    # qBittorrent / SABnzbd download area
-├── Grimmory/     # Grimmory: books/ library + bookdrop/ auto-import
+├── Grimmory/     # Retained library data from retired Grimmory service
 ├── Images/       # Jellyfin "Photos" library
 ├── Movies/       # Jellyfin "Movies" library
 ├── Music/        # Jellyfin "Music" library
@@ -706,86 +702,6 @@ sudo docker exec -u www-data nextcloud php occ status
 sudo docker exec -u www-data nextcloud php occ config:system:get trusted_domains
 ```
 
-## Grimmory
-
-Self-hosted library for ebooks, comics and audiobooks (the successor to
-BookLore; Kobo/KOReader sync, OPDS, built-in reader). At `/opt/stacks/grimmory`.
-
-- URL (LAN): http://192.168.1.70:6060
-- URL (tailnet): http://homelees.lungfish-pike.ts.net:6060
-- Images: `grimmory/grimmory:v3.5.0` + `lscr.io/linuxserver/mariadb:11.4.8`
-- App data (settings, metadata cache): `/home/grimmory/data` (SSD)
-- Database: `/home/grimmory/mariadb/config` (SSD)
-- Book library: `/mnt/media/Grimmory/books` (18TB disk)
-- Bookdrop (auto-import folder): `/mnt/media/Grimmory/bookdrop`
-- Secrets: `/opt/stacks/grimmory/.env` (gitignored, mode 0600) — DB passwords
-- Port 6060 is bound to LAN + loopback and filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
-
-```bash
-cd /opt/stacks/grimmory
-sudo docker compose config
-sudo docker compose ps
-sudo docker compose logs -f --tail=100
-sudo docker compose pull && sudo docker compose up -d   # update
-```
-
-### First run
-
-1. Open the URL and create the admin account in the setup wizard.
-2. Create a library and point its "Book Folders" at `/books`.
-3. (Optional) drop files into `/bookdrop` for automatic metadata import.
-
-The **Books** library (`/books`, watch enabled) is configured; Shelfarr writes
-finished books to `/books/{ebooks,audiobooks}`, which Grimmory auto-indexes.
-
-The version is pinned in `.env` via `GRIMMORY_VERSION`; the schema migrates
-automatically on start.
-
-## Shelfarr
-
-"Jellyseerr for books": users request ebooks and audiobooks, Shelfarr searches
-Prowlarr, downloads through qBittorrent (via Gluetun) or SABnzbd, organises the
-files and delivers them to a library (Audiobookshelf, BookOrbit or Grimmory).
-At `/opt/stacks/shelfarr`.
-
-- URL (LAN): http://192.168.1.70:5056
-- URL (tailnet): `http://<node>.<tailnet>.ts.net:5056`
-- Image: `ghcr.io/pedro-revez-silva/shelfarr:2026.09.18.1` (pinned in `.env`)
-- App data / SQLite / secret key: `/home/shelfarr/data` (SSD)
-- Output: finished books are delivered straight into the Grimmory library at
-  `/mnt/media/Grimmory/books/{audiobooks,ebooks}` (Grimmory watches it)
-- Downloads: `/mnt/media/Downloads` mounted at `/downloads`
-- Networks: `downloads_default` (Prowlarr, `gluetun:8080`, `sabnzbd:8080`) and
-  `grimmory_default` (`grimmory:6060`)
-- Port 5056 is bound to LAN + loopback and filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
-
-```bash
-cd /opt/stacks/shelfarr
-sudo docker compose config
-sudo docker compose ps
-sudo docker compose logs -f --tail=100
-sudo docker compose pull && sudo docker compose up -d   # update
-```
-
-### First run
-
-1. Open the URL; the first user to register becomes the admin.
-2. **Admin -> Settings -> Indexer**: Prowlarr, URL `http://prowlarr:9696`, plus
-   the Prowlarr API key.
-3. **Admin -> Download Clients**: add qBittorrent (`gluetun`, port `8080`)
-   and/or SABnzbd (`sabnzbd`, port `8080`), reusing the credentials in
-   `/opt/stacks/downloads/.env`.
-4. **Admin -> Settings -> Output Paths**: already set to `/grimmory-books/ebooks`
-   and `/grimmory-books/audiobooks`, both inside the watched Grimmory library.
-5. (Optional) **Library Platform**: point it at Grimmory (`http://grimmory:6060`,
-   admin credentials) so Shelfarr can list the library and trigger rescans; the
-   folder watch already imports new books without this.
-
-The optional Audible Backup companion (`shelfarr-libation`) is not deployed;
-add it from the upstream compose example if you want that beta integration.
-
 ## Beszel
 
 Lightweight host + per-container monitoring (CPU, memory, disk, network) with
@@ -923,3 +839,10 @@ Back up `/opt/stacks` (git remote or archive) and each app's data directory
 writes scheduled backups under `/home/giacolees/komodo/backups`; send both to
 encrypted storage. The retired Dockge state at `/opt/dockge/data` (admin hash +
 JWT secret) can be backed up on encrypted storage or deleted.
+
+## Retired reading services
+
+Shelfarr and Grimmory were removed on 2026-11-04. Data is retained at
+`/home/shelfarr`, `/home/grimmory`, and `/mnt/media/Grimmory`. Private stack
+configuration copies (including secrets) are retained at
+`/home/giacolees/retired-stacks-2026-11-04` with restricted permissions.
