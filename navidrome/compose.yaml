@@ -2,10 +2,10 @@
 #
 # Storage layout (all on the NVMe SSD /home for zero spin-up latency):
 #   - App state, SQLite DB, image & transcode cache: /home/navidrome/data -> /config
-#   - Music library (shared with Aurral at /data):   /home/navidrome/music -> /data:ro
+#   - Music library (shared with Octo at /data):     /home/navidrome/music -> /data:ro
 #
-# Using /data for the music mount in both Navidrome and Aurral ensures that
-# file paths reported by Aurral (/data/...) match Navidrome's container paths
+# Using /data for the music mount in both Navidrome and Octo ensures that
+# file paths reported by Octo (/data/...) match Navidrome's container paths
 # 1:1 without needing remote path mappings.
 #
 # Ports are bound to the LAN address + loopback only. Off-LAN access is via

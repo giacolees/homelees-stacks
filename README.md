@@ -56,10 +56,6 @@ that reads/writes the same stacks (it replaced Dockge).
 │   ├── compose.yaml
 │   ├── .env                  # version pin & proxy settings (gitignored, 0600)
 │   └── .env.example          # committed template with placeholders
-├── aurral/                   # AI music discovery, scheduled flows & auto-downloader
-│   ├── compose.yaml
-│   ├── .env                  # version pin (gitignored, mode 0600)
-│   └── .env.example          # committed template with placeholders
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -446,7 +442,6 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Ferdium     | `http://<node>.<tailnet>.ts.net:3333` |
 | Navidrome   | `http://<node>.<tailnet>.ts.net:4533` |
 | Octo        | `http://<node>.<tailnet>.ts.net:5274` |
-| Aurral      | `http://<node>.<tailnet>.ts.net:3001` |
 
 `tailscale-serve.service` waits for login and applies the config
 automatically. To re-apply manually:
@@ -857,9 +852,9 @@ sudo docker compose pull && sudo docker compose up -d   # update
 3. Create your account (or sign in on additional devices to sync all services and workspaces).
 4. Optional: once your personal account is created, you can set `IS_REGISTRATION_ENABLED=false` in `/opt/stacks/ferdium/.env` and run `sudo docker compose up -d` to disable new user sign-ups.
 
-## Navidrome, Octo & Aurral (Music Streaming, Subsonic Proxy + AI Discovery)
+## Navidrome & Octo (Music Streaming + Subsonic Proxy)
 
-Low-latency, Spotify-like self-hosted music stack split across three companion
+Low-latency, Spotify-like self-hosted music stack split across two companion
 services:
 - **Navidrome** (`/opt/stacks/navidrome`) for core Subsonic/OpenSubsonic
   library indexing and web playback (`:4533`).
@@ -867,10 +862,8 @@ services:
   on-the-fly streaming, multi-source radio, and auto-download proxy sitting in
   front of Navidrome (`:5274`). Point native Subsonic clients (**Sonora** on
   macOS, **Amperfy** / **Narjo** on iOS, **Symfonium**, etc.) at `:5274`.
-- **Aurral** (`/opt/stacks/aurral`) for AI/taste discovery, scheduled playlist
-  "Flows", and automated track acquisition (`:3001`).
 
-All three services store their databases, caches, and the shared music library
+Both services store their databases, caches, and the shared music library
 on the fast NVMe SSD (`/home/navidrome/music`, mounted at `/data` in all
 containers) so playback starts with 0 ms disk spin-up delay and paths match 1:1
 without remote path mappings.
@@ -917,27 +910,6 @@ sudo docker compose pull && sudo docker compose up -d   # update
 
 ```bash
 cd /opt/stacks/octo
-sudo docker compose config
-sudo docker compose ps
-sudo docker compose logs -f --tail=100
-sudo docker compose pull && sudo docker compose up -d   # update
-```
-
-### Aurral
-
-- URL (LAN): http://192.168.1.70:3001
-- URL (tailnet): `http://homelees.lungfish-pike.ts.net:3001`
-- Image: `ghcr.io/lklynet/aurral:2.13.0` (pinned in `.env`)
-- App DB, settings, jobs & yt-dlp staging: `/home/aurral/config` -> `/config` (SSD)
-- Shared music root (read/write): `/home/navidrome/music` -> `/data` (SSD)
-- Optional Usenet/torrent completed folder: `/mnt/media/Downloads` -> `/downloads`
-- Networks: `navidrome_default` (reaches Navidrome at `http://navidrome:4533`)
-  and `downloads_default` (reaches SABnzbd / Prowlarr / qBittorrent if enabled)
-- Port 3001 is bound to LAN + loopback and filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
-
-```bash
-cd /opt/stacks/aurral
 sudo docker compose config
 sudo docker compose ps
 sudo docker compose logs -f --tail=100
