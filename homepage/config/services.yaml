@@ -28,6 +28,10 @@
         icon: https://raw.githubusercontent.com/winters27/octo/main/octo/Assets/octo_logo.png
         href: http://{{HOMEPAGE_VAR_HOST}}:5274
         description: Subsonic discovery & streaming proxy
+    - Octo-Fiesta:
+        icon: mdi-music-note-plus
+        href: http://{{HOMEPAGE_VAR_HOST}}:5275
+        description: Deezer → Navidrome library filler
 
 - Media:
     - Jellyfin:

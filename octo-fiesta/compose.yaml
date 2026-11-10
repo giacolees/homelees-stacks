@@ -1,0 +1,93 @@
+# Octo-Fiesta - Subsonic API proxy that fills gaps in the Navidrome library
+# from a streaming provider (Deezer by default).
+#
+# Upstream: https://github.com/V1ck3s/octo-fiesta
+#
+# Point Subsonic clients at octo-fiesta on port 5275 instead of Navidrome on
+# 4533. When a track is missing locally it is fetched from Deezer, tagged, and
+# written into the library so Navidrome indexes it as a normal song.
+#
+# NOTE: this is NOT the same project as /opt/stacks/octo (winters27/octo).
+# That one does YouTube/Last.fm discovery, radio and mixes. Both default to
+# port 5274; octo keeps 5274 and octo-fiesta lives on 5275.
+#
+# Storage layout (all on the NVMe SSD /home):
+#   - Library (shared with Navidrome at /data):  /home/navidrome/music -> /data
+#   - App config / Tidal token store:            /home/octo-fiesta/config -> /config
+#
+# Mounting the library at /data (the same container path Navidrome uses) means
+# the paths octo-fiesta reports match Navidrome's 1:1 with no remote mapping.
+#
+# Ports are bound to the LAN address + loopback only. Off-LAN access is via
+# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+name: octo-fiesta
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILES:-3}"
+
+services:
+  octo-fiesta:
+    image: ghcr.io/v1ck3s/octo-fiesta:${OCTO_FIESTA_TAG}
+    container_name: octo-fiesta
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      # LAN + loopback (loopback is used by `tailscale serve`)
+      - "192.168.1.70:5275:8080"
+      - "127.0.0.1:5275:8080"
+    environment:
+      TZ: ${TZ:-Europe/Rome}
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+
+      # ----- Subsonic / Navidrome upstream -----
+      Subsonic__Url: ${SUBSONIC_URL:-http://navidrome:4533}
+      # Optional: admin creds let octo-fiesta trigger a library scan right after
+      # a download. Left empty, new tracks wait for Navidrome's 5m scan schedule.
+      Subsonic__AdminUsername: ${SUBSONIC_ADMIN_USERNAME:-}
+      Subsonic__AdminPassword: ${SUBSONIC_ADMIN_PASSWORD:-}
+      # Deezer | Qobuz | Tidal | Yandex | SquidWTF (deprecated)
+      Subsonic__MusicService: ${MUSIC_SERVICE}
+      # Permanent (written into the library) | Cache (temporary, auto-cleanup)
+      Subsonic__StorageMode: ${STORAGE_MODE}
+      # Track (only the requested track) | Album (whole album when a track plays)
+      Subsonic__DownloadMode: ${DOWNLOAD_MODE}
+      # Kept in .env: an inline `${VAR:-{artist}/...}` default breaks compose's
+      # variable parser because of the nested braces.
+      Subsonic__FolderTemplate: ${FOLDER_TEMPLATE}
+      # All | ExplicitOnly | CleanOnly
+      Subsonic__ExplicitFilter: ${EXPLICIT_FILTER}
+      Subsonic__EnableExternalPlaylists: ${ENABLE_EXTERNAL_PLAYLISTS}
+      Subsonic__PlaylistsDirectory: ${PLAYLISTS_DIRECTORY}
+      Subsonic__AutoUpgradeQuality: ${AUTO_UPGRADE_QUALITY}
+      Subsonic__DisableLibraryScan: ${DISABLE_LIBRARY_SCAN}
+
+      # ----- Deezer -----
+      # ARL cookie from a logged-in deezer.com session.
+      Deezer__Arl: ${DEEZER_ARL:-}
+      Deezer__ArlFallback: ${DEEZER_ARL_FALLBACK:-}
+      # FLAC | MP3_320 | MP3_128 (empty = highest the account allows)
+      Deezer__Quality: ${DEEZER_QUALITY}
+
+      # Download root inside the container; must match the library volume below.
+      Library__DownloadPath: /data
+
+      # Only used when MUSIC_SERVICE=Tidal; harmless otherwise.
+      Tidal__TokenStore: /config/tidal-tokens.json
+    volumes:
+      # rw: octo-fiesta writes downloaded tracks here. Navidrome mounts the same
+      # host directory read-only at /data, so both see identical paths.
+      - /home/navidrome/music:/data
+      - /home/octo-fiesta/config:/config
+    networks:
+      - default
+      - navidrome_net
+
+networks:
+  # The Navidrome stack's default network (http://navidrome:4533).
+  navidrome_net:
+    external: true
+    name: navidrome_default

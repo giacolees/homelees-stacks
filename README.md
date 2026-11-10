@@ -54,6 +54,10 @@ that reads/writes the same stacks (it replaced Dockge).
 │   ├── compose.yaml
 │   ├── .env                  # version pin & proxy settings (gitignored, 0600)
 │   └── .env.example          # committed template with placeholders
+├── octo-fiesta/              # Subsonic proxy that fills Navidrome gaps from Deezer
+│   ├── compose.yaml
+│   ├── .env                  # version pin & Deezer ARL (gitignored, 0600)
+│   └── .env.example          # committed template with placeholders
 └── <app>/                    # one directory per stack
     ├── compose.yaml          # canonical stack definition (preferred name)
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
@@ -438,6 +442,7 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Ferdium     | `http://<node>.<tailnet>.ts.net:3333` |
 | Navidrome   | `http://<node>.<tailnet>.ts.net:4533` |
 | Octo        | `http://<node>.<tailnet>.ts.net:5274` |
+| Octo-Fiesta | `http://<node>.<tailnet>.ts.net:5275` |
 
 `tailscale-serve.service` waits for login and applies the config
 automatically. To re-apply manually:
@@ -830,6 +835,53 @@ sudo docker compose config
 sudo docker compose ps
 sudo docker compose logs -f --tail=100
 sudo docker compose pull && sudo docker compose up -d   # update
+```
+
+### Octo-Fiesta
+
+A **different project** from Octo above: `V1ck3s/octo-fiesta` is a Subsonic
+API proxy that, when a requested track is missing from Navidrome, fetches it
+from Deezer, tags it, and writes it into the library so Navidrome indexes it as
+a normal song. No radio/mixes/YouTube — it only fills library gaps.
+
+- URL (LAN): http://192.168.1.70:5275
+- URL (tailnet): `http://homelees.lungfish-pike.ts.net:5275`
+- Image (pinned via `OCTO_FIESTA_TAG=b6a48b8` in `.env` — GHCR only publishes
+  `latest`, `dev` and commit-SHA tags, so a SHA is the only way to pin):
+  - `ghcr.io/v1ck3s/octo-fiesta:b6a48b8` (v0.11)
+- Storage (all on NVMe SSD `/home`):
+  - Shared music library (`:rw`, same `/data` path Navidrome indexes): `/home/navidrome/music` -> `/data`
+  - App config / future Tidal token store: `/home/octo-fiesta/config` -> `/config`
+- Key settings in `.env`:
+  - `MUSIC_SERVICE=Deezer`, `DEEZER_QUALITY=FLAC` (needs `DEEZER_ARL`)
+  - `STORAGE_MODE=Permanent` (tracks land in the library permanently)
+  - `DOWNLOAD_MODE=Track` (only the requested track, not the whole album)
+  - `FOLDER_TEMPLATE={artist}/{album}/{track} - {title}` — `{track}` is
+    zero-padded to 2 digits, matching the existing library layout
+  - `ENABLE_EXTERNAL_PLAYLISTS=true` — `.m3u` files land in `/data/playlists/`
+    and Navidrome imports them
+- Network: joins `navidrome_default` (`Subsonic__Url=http://navidrome:4533`)
+- Port 5275 is bound to LAN + loopback and filtered by
+  `docker-published-firewall.service`; remote access is via `tailscale serve`
+- `SUBSONIC_ADMIN_*` is empty, so new downloads appear on Navidrome's
+  `@every 5m` scan rather than immediately. Set the admin creds to make
+  octo-fiesta trigger a scan right after each download.
+- Runs as **root** (upstream image has no `USER`), so downloaded files are
+  `root:root` inside the library. Navidrome reads them fine; add
+  `user: "1000:1000"` to the service if you want them owned by `giacolees`.
+- **Coexistence:** Octo (5274) and Octo-Fiesta (5275) both write into
+  `/home/navidrome/music`. Run only one of them at a time to avoid duplicate
+  downloads. Octo is currently stopped (`sudo docker compose stop` in
+  `/opt/stacks/octo`) so Octo-Fiesta is the single writer.
+
+```bash
+cd /opt/stacks/octo-fiesta
+sudo docker compose config
+sudo docker compose ps
+sudo docker compose logs -f --tail=100
+sudo docker compose pull && sudo docker compose up -d   # update
+# Tidal only: interactive OAuth login, tokens persist in /home/octo-fiesta/config
+sudo docker compose run --rm octo-fiesta --tidal-login
 ```
 
 ## Backups
