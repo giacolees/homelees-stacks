@@ -798,6 +798,13 @@ without remote path mappings.
 - Music library (read-only mount): `/home/navidrome/music` -> `/data:ro` (SSD)
 - Port 4533 is bound to LAN + loopback and filtered by
   `docker-published-firewall.service`; remote access is via `tailscale serve`
+- **Last.fm scrobbling** (since 2026-11-17): `ND_LASTFM_APIKEY` / `ND_LASTFM_SECRET`
+  are set in `.env` (mode `0600`, gitignored; same Last.fm API account that Octo
+  used). Navidrome is now the scrobbler — Octo was retired on 2026-11-10 and
+  replaced by `octo-fiesta`, which has no Last.fm support. Each user must enable
+  *Settings → Personal → Scrobble to Last.fm* once and authorize on last.fm.
+  Without these two variables the toggle stays greyed out and the UI shows
+  `Last.fm API-Key is not configured`.
 
 ```bash
 cd /opt/stacks/navidrome
