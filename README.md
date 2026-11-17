@@ -50,10 +50,6 @@ that reads/writes the same stacks (it replaced Dockge).
 │   ├── compose.yaml
 │   ├── .env                  # version pin & optional Last.fm keys (gitignored, 0600)
 │   └── .env.example          # committed template with placeholders
-├── octo/                     # Subsonic discovery, streaming, radio & auto-download proxy
-│   ├── compose.yaml
-│   ├── .env                  # version pin & proxy settings (gitignored, 0600)
-│   └── .env.example          # committed template with placeholders
 ├── octo-fiesta/              # Subsonic proxy that fills Navidrome gaps from Deezer
 │   ├── compose.yaml
 │   ├── .env                  # version pin & Deezer ARL (gitignored, 0600)
@@ -441,7 +437,6 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | SABnzbd     | `http://<node>.<tailnet>.ts.net:8081` |
 | Ferdium     | `http://<node>.<tailnet>.ts.net:3333` |
 | Navidrome   | `http://<node>.<tailnet>.ts.net:4533` |
-| Octo        | `http://<node>.<tailnet>.ts.net:5274` |
 | Octo-Fiesta | `http://<node>.<tailnet>.ts.net:5275` |
 
 `tailscale-serve.service` waits for login and applies the config
@@ -773,21 +768,28 @@ sudo docker compose pull && sudo docker compose up -d   # update
 3. Create your account (or sign in on additional devices to sync all services and workspaces).
 4. Optional: once your personal account is created, you can set `IS_REGISTRATION_ENABLED=false` in `/opt/stacks/ferdium/.env` and run `sudo docker compose up -d` to disable new user sign-ups.
 
-## Navidrome & Octo (Music Streaming + Subsonic Proxy)
+## Navidrome & Octo-Fiesta (Music Streaming + Subsonic Proxy)
 
 Low-latency, Spotify-like self-hosted music stack split across two companion
 services:
 - **Navidrome** (`/opt/stacks/navidrome`) for core Subsonic/OpenSubsonic
-  library indexing and web playback (`:4533`).
-- **Octo** (`/opt/stacks/octo`) as a Subsonic/OpenSubsonic discovery,
-  on-the-fly streaming, multi-source radio, and auto-download proxy sitting in
-  front of Navidrome (`:5274`). Point native Subsonic clients (**Sonora** on
-  macOS, **Amperfy** / **Narjo** on iOS, **Symfonium**, etc.) at `:5274`.
+  library indexing and web playback (`:4533`). Point native Subsonic clients
+  (**Sonora** on macOS, **Amperfy** / **Narjo** on iOS, **Symfonium**, etc.)
+  directly at `:4533`.
+- **Octo-Fiesta** (`/opt/stacks/octo-fiesta`) as a Subsonic proxy that fills
+  library gaps from Deezer (`:5275`).
 
 Both services store their databases, caches, and the shared music library
 on the fast NVMe SSD (`/home/navidrome/music`, mounted at `/data` in all
 containers) so playback starts with 0 ms disk spin-up delay and paths match 1:1
 without remote path mappings.
+
+> **Retired: Octo (`winters27/octo`, port 5274).** Removed 2026-11-17. It was
+> shut down 2026-11-10 and superseded by Octo-Fiesta; its Last.fm scrobbling
+> role moved to Navidrome itself. Containers, `navidrome_net` peer, port 5274
+> (firewall + `tailscale serve`), landing-page row, Homepage entry, the
+> `/home/octo` data directory and the `/opt/stacks/octo` stack were all removed.
+> History is in git (`git log --all -- octo/`).
 
 ### Navidrome
 
@@ -799,9 +801,9 @@ without remote path mappings.
 - Port 4533 is bound to LAN + loopback and filtered by
   `docker-published-firewall.service`; remote access is via `tailscale serve`
 - **Last.fm scrobbling** (since 2026-11-17): `ND_LASTFM_APIKEY` / `ND_LASTFM_SECRET`
-  are set in `.env` (mode `0600`, gitignored; same Last.fm API account that Octo
-  used). Navidrome is now the scrobbler — Octo was retired on 2026-11-10 and
-  replaced by `octo-fiesta`, which has no Last.fm support. Each user must enable
+  are set in `.env` (mode `0600`, gitignored; the Last.fm API account previously
+  used by the retired Octo stack). Navidrome is the scrobbler — Octo-Fiesta has
+  no Last.fm support. Each user must enable
   *Settings → Personal → Scrobble to Last.fm* once and authorize on last.fm.
   Without these two variables the toggle stays greyed out and the UI shows
   `Last.fm API-Key is not configured`.
@@ -823,40 +825,10 @@ sudo docker compose logs -f --tail=100
 sudo docker compose pull && sudo docker compose up -d   # update
 ```
 
-### Octo
-
-- URL (LAN): http://192.168.1.70:5274
-- URL (tailnet): `http://homelees.lungfish-pike.ts.net:5274`
-- Images (pinned via `OCTO_IMAGE_TAG=2026.10.28` in `.env`):
-  - `ghcr.io/winters27/octo:2026.10.28` (Subsonic proxy & admin dashboard)
-  - `ghcr.io/winters27/octo-yt-dlp-shim:2026.10.28` (low-latency stream resolution & YouTube downloads with `YTDLP_PLAYER_CLIENT=visionos`)
-  - `ghcr.io/winters27/octo-sonic:2026.10.28` (acoustic "Sounds Alike" analysis & transition profiles, `SONIC_USER=1000:1000`, `cpus: 1`, `mem_limit: 2g`)
-- Storage (all on NVMe SSD `/home`):
-  - Octo settings, state & cover cache: `/home/octo/config` -> `/app/config`
-  - yt-dlp player/nsig cache: `/home/octo/ytdlp-cache` -> `/root/.cache/yt-dlp`
-  - yt-dlp-shim SQLite duration cache: `/home/octo/ytshim-cache` -> `/var/lib/ytshim`
-  - yt-dlp self-updating binary dir: `/home/octo/ytdlp-bin` -> `/opt/ytdlp`
-  - Shared music library (matches Navidrome `ND_MUSICFOLDER=/data`): `/home/navidrome/music` -> `/data`
-- Key features configured in `.env` / `compose.yaml`:
-  - Global search & on-the-fly streaming (`Subsonic__EnableSearchDiscovery=true`, `Subsonic__SizeFlagClients=Amperfy`, `Subsonic__CoverBadge=true`).
-  - Auto-download into Navidrome (`Subsonic__DownloadSource=YouTube`, `Subsonic__DownloadOnStar=true`, `Subsonic__DownloadOnPlay=true`, `Metadata__FetchLyrics=true`, `Subsonic__FolderStructure=Organized`).
-  - Multi-source radio & generated playlists (`RadioSources__YouTubeMusic=true`, `RadioSources__ListenBrainz=true`, `RadioSources__SoundsAlike=true`, `GeneratedPlaylists__PopularNow=true`, `NewReleases=true`, `Rediscover=true`, `DeepCuts=true`).
-- Network: joins `navidrome_default` (`Subsonic__Url=http://navidrome:4533`)
-- Port 5274 is bound to LAN + loopback and filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
-
-```bash
-cd /opt/stacks/octo
-sudo docker compose config
-sudo docker compose ps
-sudo docker compose logs -f --tail=100
-sudo docker compose pull && sudo docker compose up -d   # update
-```
-
 ### Octo-Fiesta
 
-A **different project** from Octo above: `V1ck3s/octo-fiesta` is a Subsonic
-API proxy that, when a requested track is missing from Navidrome, fetches it
+`V1ck3s/octo-fiesta` is a Subsonic API proxy that, when a requested track is
+missing from Navidrome, fetches it
 from Deezer, tags it, and writes it into the library so Navidrome indexes it as
 a normal song. No radio/mixes/YouTube — it only fills library gaps.
 
@@ -885,10 +857,9 @@ a normal song. No radio/mixes/YouTube — it only fills library gaps.
 - Runs as **root** (upstream image has no `USER`), so downloaded files are
   `root:root` inside the library. Navidrome reads them fine; add
   `user: "1000:1000"` to the service if you want them owned by `giacolees`.
-- **Coexistence:** Octo (5274) and Octo-Fiesta (5275) both write into
-  `/home/navidrome/music`. Run only one of them at a time to avoid duplicate
-  downloads. Octo is currently stopped (`sudo docker compose stop` in
-  `/opt/stacks/octo`) so Octo-Fiesta is the single writer.
+- **Single writer:** Octo-Fiesta is the only service writing into
+  `/home/navidrome/music` other than manual imports (the retired Octo stack was
+  the previous second writer).
 
 ```bash
 cd /opt/stacks/octo-fiesta
