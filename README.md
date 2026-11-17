@@ -805,6 +805,15 @@ without remote path mappings.
   *Settings → Personal → Scrobble to Last.fm* once and authorize on last.fm.
   Without these two variables the toggle stays greyed out and the UI shows
   `Last.fm API-Key is not configured`.
+- **Backfilling missed plays**: Navidrome records every play in its own
+  `scrobbles` table even when no API key is configured, so plays made while
+  scrobbling was broken are not lost. `/home/giacolees/scripts/lastfm-backfill.py`
+  replays them (dry-run by default, `--commit` to send). It dedupes against the
+  remote history and against a local journal
+  (`/home/giacolees/scripts/.lastfm-backfill-journal.json`, mode `0600`) because
+  Last.fm autocorrects metadata and would otherwise be resubmitted forever.
+  Last.fm silently drops scrobbles older than ~14 days, so run it regularly or
+  right after repairing credentials. 2026-11-17: 539 plays reconciled.
 
 ```bash
 cd /opt/stacks/navidrome
