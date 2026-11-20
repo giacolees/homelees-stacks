@@ -800,22 +800,18 @@ without remote path mappings.
 - Music library (read-only mount): `/home/navidrome/music` -> `/data:ro` (SSD)
 - Port 4533 is bound to LAN + loopback and filtered by
   `docker-published-firewall.service`; remote access is via `tailscale serve`
-- **Last.fm scrobbling** (since 2026-11-17): `ND_LASTFM_APIKEY` / `ND_LASTFM_SECRET`
-  are set in `.env` (mode `0600`, gitignored; the Last.fm API account previously
-  used by the retired Octo stack). Navidrome is the scrobbler — Octo-Fiesta has
-  no Last.fm support. Each user must enable
-  *Settings → Personal → Scrobble to Last.fm* once and authorize on last.fm.
-  Without these two variables the toggle stays greyed out and the UI shows
-  `Last.fm API-Key is not configured`.
+- **ListenBrainz scrobbling** (migrated from Last.fm on 2026-11-20):
+  `ND_LISTENBRAINZ_ENABLED=true` is set in `compose.yaml` (Last.fm API keys
+  removed). Each user enables *Settings → Personal → Scrobble to ListenBrainz*
+  with their ListenBrainz User Token (`ListenBrainzSessionKey` in `user_props`).
+  Navidrome is the scrobbler — Octo-Fiesta has no scrobbling support.
 - **Backfilling missed plays**: Navidrome records every play in its own
-  `scrobbles` table even when no API key is configured, so plays made while
-  scrobbling was broken are not lost. `/home/giacolees/scripts/lastfm-backfill.py`
-  replays them (dry-run by default, `--commit` to send). It dedupes against the
-  remote history and against a local journal
-  (`/home/giacolees/scripts/.lastfm-backfill-journal.json`, mode `0600`) because
-  Last.fm autocorrects metadata and would otherwise be resubmitted forever.
-  Last.fm silently drops scrobbles older than ~14 days, so run it regularly or
-  right after repairing credentials. 2026-11-17: 539 plays reconciled.
+  `scrobbles` table, so plays made while scrobbling was unconfigured are not
+  lost. `/home/giacolees/scripts/listenbrainz-backfill.py` replays them
+  (dry-run by default, `--commit` to send, `--lastfm-export` to merge a
+  Last.fm export) and dedupes against the user's existing ListenBrainz history.
+  2026-11-20: 1,418 plays migrated for `giacolees` (Last.fm `giava2005` +
+  Navidrome DB) and 201 plays for `valees` (Navidrome DB).
 
 ```bash
 cd /opt/stacks/navidrome

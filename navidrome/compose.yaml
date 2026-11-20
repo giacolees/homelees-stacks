@@ -33,8 +33,7 @@ services:
       - ND_ENABLESHARING=true
       - ND_ENABLESTARRATING=true
       - ND_SESSIONTIMEOUT=168h
-      - ND_LASTFM_APIKEY=${ND_LASTFM_APIKEY:-}
-      - ND_LASTFM_SECRET=${ND_LASTFM_SECRET:-}
+      - ND_LISTENBRAINZ_ENABLED=true
     ports:
       # LAN + loopback (loopback is used by `tailscale serve`)
       - "192.168.1.70:4533:4533"
