@@ -1073,7 +1073,9 @@ sudo docker compose logs -f bot
   Apache keeps :80. Docker pulls go through `mirror.gcr.io` (daemon.json) to
   avoid Docker Hub rate limits.
 - **Authelia** 4.39 (`authelia/configuration.yml`, loopback :9091) at
-  https://auth.homelees.party — password + **passkeys** (Face ID / Touch ID).
+  https://auth.homelees.party — policy `two_factor`: password + passkey, or a
+  **passkey alone** (Touch ID / Face ID counts as both factors via
+  `experimental_enable_passkey_uv_two_factors`).
   User file `/home/sso/authelia/users.yml`; secrets `/home/sso/authelia/secrets`;
   initial password `/root/.config/homelees/authelia-password`. No mail server:
   one-time codes (passkey registration) land in
@@ -1081,7 +1083,7 @@ sudo docker compose logs -f bot
 
 | Host | Service | Auth |
 | :--- | :--- | :--- |
-| `home` | Homepage | SSO |
+| `home` | Homepage | SSO (2FA) |
 | `sonarr` `radarr` `prowlarr` `bazarr` `sab` `torrent` | *arr / SABnzbd / qBittorrent | SSO (`/api` bypassed → app API key) |
 | `cockpit` | Cockpit | SSO + Cockpit login |
 | `jellyfin` `cloud` `music` `subsonic` `requests` `komodo` `beszel` `ferdium` `vita` | apps with their own login / native clients | app login (OIDC next) |

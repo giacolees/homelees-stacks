@@ -10,11 +10,14 @@ totp:
 webauthn:
   disable: false
   enable_passkey_login: true
+  # A passkey with user verification (Touch ID / Face ID / PIN) counts as two
+  # factors on its own, so one tap satisfies the two_factor policy below.
+  experimental_enable_passkey_uv_two_factors: true
   display_name: homelees
   timeout: 60s
   selection_criteria:
     discoverability: preferred
-    user_verification: preferred
+    user_verification: required
 authentication_backend:
   password_reset:
     disable: true
@@ -32,7 +35,7 @@ access_control:
       resources: ['^/api/v2/.*$']
       policy: bypass
     - domain: '*.homelees.party'
-      policy: one_factor
+      policy: two_factor
 session:
   cookies:
     - domain: homelees.party
