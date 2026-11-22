@@ -35,9 +35,6 @@ services:
       # Web UI (LAN + loopback for tailscale serve)
       - "192.168.1.70:8096:8096"
       - "127.0.0.1:8096:8096"
-      # Built-in HTTPS (LAN + loopback)
-      - "192.168.1.70:8920:8920"
-      - "127.0.0.1:8920:8920"
       # DLNA discovery (LAN only)
       - "192.168.1.70:1900:1900/udp"
       - "192.168.1.70:7359:7359/udp"

@@ -496,7 +496,8 @@ Adopted from the orphaned CasaOS container into a managed stack.
 - Ports: bound to `192.168.1.70` + `127.0.0.1` only; DLNA on the LAN address.
   Remote access is via `tailscale serve` -> `tcp/8096` -> `127.0.0.1:8096`.
 - Firewall: `docker-published-firewall.service` drops non-LAN traffic to all
-  published Docker UI ports (8096/8920 included) in `DOCKER-USER`.
+  published Docker UI ports (8096 included) in `DOCKER-USER`. The built-in
+  HTTPS port 8920 is no longer published (removed 2026-11-22; unused).
 
 ### Commands
 
