@@ -38,3 +38,14 @@ homepage/config/*
 
 # Cloned app repo (has its own .git)
 /wellness/
+
+# Versioned helper scripts that live under otherwise-ignored config dirs
+!downloads/config/
+downloads/config/*
+!downloads/config/gluetun/
+downloads/config/gluetun/*
+!downloads/config/gluetun/update-qbittorrent-port.sh
+
+# Agent guide symlinks (real file: /home/giacolees/AGENT.md)
+/AGENT.md
+/AGENTS.md

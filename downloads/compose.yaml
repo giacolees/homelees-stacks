@@ -51,9 +51,12 @@ services:
       # Optional server selection
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}
       - FREE_ONLY=${FREE_ONLY:-off}
-      # Allow the Web UI through the firewall; allow torrent port from the VPN
+      # Allow the Web UI through the firewall; enable ProtonVPN NAT-PMP port forwarding
       - FIREWALL_INPUT_PORTS=8080
-      - FIREWALL_VPN_INPUT_PORTS=6881
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_UP_COMMAND=/bin/sh -c '/gluetun/update-qbittorrent-port.sh "{{PORTS}}"'
+      - QBITTORRENT_USER=${QBITTORRENT_USER}
+      - QBITTORRENT_PASSWORD=${QBITTORRENT_PASSWORD}
     volumes:
       - ./config/gluetun:/gluetun
 

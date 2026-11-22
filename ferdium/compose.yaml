@@ -1,0 +1,40 @@
+# Ferdium Server - self-hosted sync & recipe server for Ferdium desktop clients.
+#
+# Official repository & docs:
+#   https://github.com/ferdium/ferdium-server
+#
+# Storage layout:
+#   - Database (SQLite), app key & JWT PEM keys: /home/ferdium/data (SSD)
+#   - Recipes repository & archives: /home/ferdium/recipes (SSD), mounted at
+#     both /app/recipes (used by entrypoint.sh) and /app/build/recipes (used by
+#     the compiled AdonisJS runtime).
+#
+# Ports are bound to the LAN address + loopback only. Off-LAN access is via
+# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+name: ferdium
+
+services:
+  ferdium-server:
+    image: ferdium/ferdium-server:${FERDIUM_VERSION}
+    container_name: ferdium-server
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - TZ=${TZ}
+    ports:
+      # LAN + loopback (loopback is used by `tailscale serve`)
+      - "192.168.1.70:3333:3333"
+      - "127.0.0.1:3333:3333"
+    volumes:
+      - /home/ferdium/data:/data
+      - /home/ferdium/recipes:/app/recipes
+      - /home/ferdium/recipes:/app/build/recipes
+      - /home/ferdium/recipes/archives:/app/build/tmp/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-sSf", "http://localhost:3333/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

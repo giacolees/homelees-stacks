@@ -25,6 +25,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - /DATA/AppData/jellyfin/config:/config
+      # Transcode/cache scratch kept OFF the small (23G) root SSD: put it on the
+      # big /home disk so a runaway transcode cache can never fill / and take
+      # down the server again. Paired with jellyfin-transcode-cleanup.timer.
+      - /home/jellyfin/transcodes:/config/cache/transcodes
       # 18TB media disk, stably mounted at /mnt/media via /etc/fstab (UUID)
       - /mnt/media:/media
     ports:
