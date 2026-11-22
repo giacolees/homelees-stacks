@@ -42,8 +42,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks: [internal]
-    read_only: true
-    tmpfs: [/run, /tmp, /var/lib/haproxy]
+    # Not read_only: the entrypoint renders haproxy.cfg at startup.
     security_opt: [no-new-privileges:true]
     mem_limit: 64m
 
