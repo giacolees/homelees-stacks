@@ -6,7 +6,8 @@
 #
 # Update flow (base image is pulled, packages reinstalled):
 #   docker compose build --pull && docker compose up -d
-FROM nextcloud:stable-apache
+# Base pinned 2026-11-22 (was :stable-apache); bump deliberately (Diun notifies).
+FROM nextcloud:34.0.4-apache
 
 RUN set -ex; \
     apt-get update; \

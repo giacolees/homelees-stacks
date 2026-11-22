@@ -1,0 +1,33 @@
+# Diun — Docker Image Update Notifier.
+# Watches the registries for NEW VERSION TAGS of every pinned image listed in
+# images.yml (file provider: no Docker socket needed) and notifies via Telegram.
+# Workflow: notification -> bump the tag in the stack's compose.yaml/.env ->
+# `sudo docker compose pull && sudo docker compose up -d` -> commit.
+# No published ports. State (bolt db): /home/diun/data.
+name: diun
+
+services:
+  diun:
+    image: crazymax/diun:4.33.1
+    container_name: diun
+    restart: unless-stopped
+    command: serve
+    user: "1000:1000"
+    environment:
+      - TZ=Europe/Rome
+      - LOG_LEVEL=info
+      - DIUN_WATCH_WORKERS=4
+      - DIUN_WATCH_SCHEDULE=0 9 * * *          # daily 09:00
+      - DIUN_WATCH_JITTER=30s
+      - DIUN_WATCH_FIRSTCHECKNOTIF=false
+      - DIUN_PROVIDERS_FILE_FILENAME=/etc/diun/images.yml
+    env_file:
+      - path: .env                              # Telegram notifier (optional until set)
+        required: false
+    volumes:
+      - /home/diun/data:/data
+      - ./images.yml:/etc/diun/images.yml:ro
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    mem_limit: 128m
