@@ -904,7 +904,7 @@ Host-level configuration that is **not** a Docker stack. Backups of every
 replaced file sit next to it with a `.bak-20261122` / `.debian-default` suffix.
 
 - **SSH** — `/etc/ssh/sshd_config.d/10-hardening.conf`: `PermitRootLogin no`,
-  `X11Forwarding no`, `MaxAuthTries 4`, `AllowUsers giacolees`. Key auth is set
+  `X11Forwarding no`, `MaxAuthTries 4`, `AllowUsers giacolees`, `PasswordAuthentication no`. Key auth is set
   up (`~/.ssh/authorized_keys`, key "mac → homelees"). `PasswordAuthentication`
   is still **on** until key login from the LAN is confirmed; then set it to `no`
   in that file and `sudo systemctl reload ssh`. Note: Tailscale SSH
