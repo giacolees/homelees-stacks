@@ -64,7 +64,7 @@ avail_mb=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
 if command -v tailscale >/dev/null; then
     tailscale status --json 2>/dev/null | jq -e '.BackendState=="Running"' >/dev/null || add "Tailscale is not running"
 fi
-if command -v netbird >/dev/null && systemctl is-enabled -q netbird 2>/dev/null; then
+if command -v netbird >/dev/null && [ -e /etc/homelees/netbird-enrolled ]; then
     netbird status 2>/dev/null | grep -q 'Management: Connected' || add "NetBird is not connected"
 fi
 

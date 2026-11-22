@@ -1,0 +1,6 @@
+[Unit]
+Description=All NetBird port forwards
+After=netbird.service
+
+[Install]
+WantedBy=multi-user.target
