@@ -878,7 +878,18 @@ JWT secret) can be backed up on encrypted storage or deleted.
 
 ## Retired reading services
 
-Shelfarr and Grimmory were removed on 2026-11-04. Data is retained at
-`/home/shelfarr`, `/home/grimmory`, and `/mnt/media/Grimmory`. Private stack
+Shelfarr and Grimmory were removed on 2026-11-04. Their library data is
+retained at `/mnt/media/Grimmory`; their SSD app state (`/home/shelfarr`,
+`/home/grimmory`) was archived on 2026-11-22 to
+`/mnt/media/Archive/2026-11-22-rescue/retired-app-state-grimmory-shelfarr.tar.gz`
+and deleted from the SSD.
+
+## Archive (`/mnt/media/Archive`)
+
+`2026-11-22-rescue/` holds the only files that were not already on
+`/mnt/media` when the one-off `/home/media-backup` copy (Sept 2026) was
+deleted: 10 Nextcloud photos (`admin/files/Amazon Photos Downloads/Immagini`),
+the final Immich DB dump, the Immich removal tarball, and the
+Grimmory/Shelfarr app state. Private stack
 configuration copies (including secrets) are retained at
 `/home/giacolees/retired-stacks-2026-11-04` with restricted permissions.
