@@ -59,10 +59,11 @@ that reads/writes the same stacks (it replaced Dockge).
     ├── .env                  # OPTIONAL, per-stack secrets — NEVER committed
     └── .env.example          # OPTIONAL, committed template with dummy values
 
-/home/giacolees/komodo/       # Komodo (build/deploy web UI) - outside this repo
-├── mongo.compose.yaml        # Komodo Core + Periphery + MongoDB
-├── compose.env               # Core/Periphery config + secrets (mode 0600)
-└── backups/                  # scheduled Komodo DB backups
+/opt/stacks/komodo       # Komodo (build/deploy web UI) - in this repo since 2026-11-22
+├── compose.yaml              # Komodo Core + Periphery + MongoDB (name: komodo)
+├── .env                      # Core/Periphery config + secrets (0600, gitignored)
+└── .env.example              # committed template
+/home/komodo/backups          # scheduled Komodo DB backups (SSD)
 
 /opt/dockge/                  # retired Dockge install (stopped, kept for rollback)
 ├── compose.yaml              # `docker compose up -d` here restores Dockge
@@ -83,8 +84,8 @@ Conventions:
 | `/opt/stacks/<app>`      | giacolees:giacolees | 2775 | created by the admin user                |
 | `/opt/dockge`            | giacolees:giacolees | 0755 | retired Dockge install                   |
 | `/opt/dockge/data`       | root:root      | 0700  | old Dockge secrets; root-only            |
-| `/home/giacolees/komodo` | giacolees:giacolees | 0755 | Komodo compose + config                  |
-| `.../komodo/compose.env` | giacolees:giacolees | 0600 | Komodo secrets; root-only-ish            |
+| `/opt/stacks/komodo` | giacolees:giacolees | 0755 | Komodo compose + config                  |
+| `.../komodo/.env` | giacolees:giacolees | 0600 | Komodo secrets; root-only-ish            |
 | `/var/run/docker.sock`   | root:docker    | 0660  | root-equivalent access                   |
 
 `/opt/stacks` uses a setgid bit and a **default ACL** so files created by root
@@ -227,7 +228,7 @@ Do not then deploy the same stack from both Dockge and Komodo.
 
 `/opt/stacks` is a git repo. `.gitignore` excludes `.env`, key material, and
 common state directories. **Never commit credentials, tokens, `.env` files,
-private keys, or Komodo's `compose.env` / Dockge's `data/`.** Commit only
+private keys, or Komodo's `.env` / Dockge's `data/`.** Commit only
 compose files and `.env.example` templates with placeholder values.
 
 ```bash
@@ -294,9 +295,12 @@ mode), plus containers, builds and git-based deploys. It replaced Dockge.
 
 - URL (LAN): **http://192.168.1.70:9120**
 - URL (tailnet): `http://homelees.lungfish-pike.ts.net:9120`
-- Stack: `/home/giacolees/komodo/mongo.compose.yaml` (Core + Periphery + Mongo)
-- Config/secrets: `/home/giacolees/komodo/compose.env` (mode 0600)
-- Admin login: created on first launch; credentials in `compose.env`
+- Stack: `/opt/stacks/komodo/compose.yaml` (Core + Periphery + Mongo)
+- Config/secrets: `/opt/stacks/komodo/.env` (mode 0600). Self-registration is
+  disabled (`KOMODO_DISABLE_USER_REGISTRATION=true`).
+- Security: Periphery has the Docker socket and terminals enabled, so a Komodo
+  admin login is equivalent to root on this host. Keep it LAN/VPN-only.
+- Admin login: created on first launch; credentials in `.env`
   (`KOMODO_INIT_ADMIN_USERNAME` / `KOMODO_INIT_ADMIN_PASSWORD`)
 
 Komodo runs **three containers**: `komodo-core` (UI/API on :9120),
@@ -335,13 +339,13 @@ control Docker. Keep it on the LAN/VPN.
 ### Komodo lifecycle
 
 ```bash
-cd /home/giacolees/komodo
-sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env ps
-sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env up -d
-sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env logs -f --tail=100
+cd /opt/stacks/komodo
+sudo docker compose ps
+sudo docker compose up -d
+sudo docker compose logs -f --tail=100
 # update: pull newer images and recreate
-sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env pull
-sudo docker compose -p komodo -f mongo.compose.yaml --env-file compose.env up -d
+sudo docker compose pull
+sudo docker compose up -d
 ```
 
 The Homepage dashboard shows a Komodo widget (server/stack/container counts).
@@ -872,7 +876,7 @@ sudo docker compose run --rm octo-fiesta --tidal-login
 
 Back up `/opt/stacks` (git remote or archive) and each app's data directory
 (e.g. `/DATA/<app>`). Komodo keeps its state in the `komodo` Mongo volume and
-writes scheduled backups under `/home/giacolees/komodo/backups`; send both to
+writes scheduled backups under `/opt/stacks/komodobackups`; send both to
 encrypted storage. The retired Dockge state at `/opt/dockge/data` (admin hash +
 JWT secret) can be backed up on encrypted storage or deleted.
 
@@ -952,7 +956,7 @@ remote named `gdrive` (type `drive`, scope `drive.file`) for **root**:
 
 What is backed up (tags):
 - `system` — `/opt/stacks` (incl. `.env` secrets, only ever stored encrypted),
-  `/home/giacolees/komodo`, app state in `/home/{beszel,ferdium,octo-fiesta}`,
+  `/opt/stacks/komodo`, app state in `/home/{beszel,ferdium,octo-fiesta}`,
   `/home/nextcloud/config`, `/home/navidrome/data`, Jellyfin config
   (`/DATA/AppData/jellyfin`), `/etc`, `/usr/local/sbin`, `/var/www/html`, and
   `/home/backup/dumps`: consistent dumps of MariaDB (Nextcloud), Postgres

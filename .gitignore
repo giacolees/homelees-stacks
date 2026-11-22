@@ -49,3 +49,6 @@ downloads/config/gluetun/*
 # Agent guide symlinks (real file: /home/giacolees/AGENT.md)
 /AGENT.md
 /AGENTS.md
+
+# Komodo generated admin credentials
+komodo/.generated-credentials
