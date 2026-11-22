@@ -978,3 +978,36 @@ sudo -E restic -r $R restore latest --tag system --include /home/ferdium --targe
 #   zcat wellness-postgres.sql.gz | docker exec -i wellness-db sh -c 'psql -U "$POSTGRES_USER" postgres'
 #   docker exec -i komodo-mongo-1 sh -c 'mongorestore --archive --gzip --drop -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin' < komodo-mongo.archive.gz
 ```
+
+## Monitoring, alerts & updates (2026-11-22)
+
+All alerts go to one Telegram chat through `/usr/local/sbin/tg-notify "msg"`
+(credentials in `/etc/homelees/telegram.env`, 0600: `TG_TOKEN=…`,
+`TG_CHAT_ID=…`). Until that file exists, alerts are only logged:
+`journalctl -t tg-notify`.
+
+| Source | What | Schedule |
+| :--- | :--- | :--- |
+| `homelees-healthcheck.timer` → `/usr/local/sbin/homelees-healthcheck` | `/mnt/media` mounted, disk usage (85%, 90% for media//tmp), kernel storage I/O errors, ext4 error counters, failed units, unhealthy/stopped/restart-looping containers, backup age/status, low memory, VPN up. Alerts only on **change** (new problem / resolved). State: `/var/lib/homelees-status/health.json` | every 10 min |
+| `smartmontools` (`/etc/smartd.conf`) → `smartd-notify` | NVMe SMART + temperature, self-tests (short Sun 03:00, long 1st 04:00). The Seagate One Touch Hub USB enclosure does **not** pass SMART through, so the HDD is covered by the kernel-error/ext4 checks above instead. | continuous |
+| `homelees-backup` | failure, or offsite not configured | nightly |
+| Diun (`/opt/stacks/diun`) | new version tags for every pinned image | daily 09:00 |
+| `docker-cleanup.timer` | prunes images unused for >7 days + build cache >2 GB | monthly |
+
+`vm.swappiness=10` (`/etc/sysctl.d/90-homelees.conf`). The 1 GB swap fills
+with cold pages of long-running daemons; that is harmless — watch
+`/proc/pressure/memory`, not swap usage.
+
+### Updating an image
+
+Every image is pinned to an explicit version (or digest for gluetun).
+Diun reports new tags. To upgrade:
+
+```bash
+cd /opt/stacks/<stack>
+# edit the tag in compose.yaml (or the *_VERSION var in .env)
+sudo docker compose pull && sudo docker compose up -d && sudo docker compose ps
+# also bump the matching entry in /opt/stacks/diun/images.yml, then:
+cd /opt/stacks && git commit -am "<stack>: bump <image> to <tag>"
+```
+Rollback = restore the previous tag and `up -d` again (old images are kept 7 days).
