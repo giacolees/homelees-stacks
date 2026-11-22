@@ -1,0 +1,12 @@
+[Unit]
+Description=Prune unused Docker images and build cache
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Only images unused by ANY container (running or stopped) and older than 7 days,
+# so a rollback to the previous tag stays possible for a week.
+ExecStart=/usr/bin/docker image prune -af --filter until=168h
+ExecStart=/usr/bin/docker builder prune -f --keep-storage 2GB
+Nice=10

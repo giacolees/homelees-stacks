@@ -1,0 +1,14 @@
+[Unit]
+Description=Purge stale Jellyfin transcode cache files
+Documentation=file:/opt/stacks/jellyfin/compose.yaml
+After=local-fs.target
+
+[Service]
+Type=oneshot
+# Transcode segments orphaned by crashed/abandoned streams. Active playback
+# keeps writing fresh segments, so anything older than 12h is stale and safe
+# to remove. Bounds the cache between Jellyfin's own cleanup runs.
+ExecStart=/usr/bin/find /home/jellyfin/transcodes -mindepth 1 -type f -mmin +720 -delete
+ExecStart=/usr/bin/find /home/jellyfin/transcodes -mindepth 1 -type d -empty -delete
+Nice=10
+IOSchedulingClass=idle

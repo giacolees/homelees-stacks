@@ -1,0 +1,23 @@
+#!/bin/bash
+# Daily 09:00 summary to Telegram (homelees-digest.timer).
+set -uo pipefail
+S=/var/lib/homelees-status
+/usr/local/sbin/homelees-healthcheck >/dev/null 2>&1 || true   # fresh data
+up=$(awk '{printf "%.1f", $1/86400}' /proc/uptime)
+mem=$(awk '/MemTotal/{t=$2}/MemAvailable/{a=$2}END{printf "%.1f/%.1f GiB", (t-a)/1048576, t/1048576}' /proc/meminfo)
+disks=$(jq -r '.disks[] | "  \(.mount) \(.pct)%"' $S/metrics.json 2>/dev/null)
+ctr=$(docker ps -a --format '{{.State}}' | sort | uniq -c | awk '{printf "%s %s, ", $1, $2}' | sed 's/, $//')
+b=$(jq -r '"\(.status) at \(.time[11:16]) on \(.time[0:10]), offsite: \(.offsite)"' $S/backup.json 2>/dev/null || echo "no data")
+probs=$(jq -r '.problems[] | "  • " + .' $S/health.json 2>/dev/null)
+upd=$(jq -r '.updates | "\(.apt) apt pending (\(.security) security)" + (if .reboot_needed then ", reboot needed (kernel \(.kernel_installed))" else "" end)' $S/metrics.json 2>/dev/null)
+smart=$(jq -r '.smart | "NVMe \(.nvme.health), wear \(.nvme.wear); HDD \(.hdd.health)"' $S/metrics.json 2>/dev/null)
+msg="☀️ Daily report
+$( [ -z "$probs" ] && echo "✅ No problems" || printf '🔴 Problems:\n%s' "$probs")
+⏱ up ${up} days · RAM ${mem}
+📦 containers: ${ctr}
+💾 backup: ${b}
+🩺 ${smart}
+⬆️ ${upd}
+🗄 disks:
+${disks}"
+/usr/local/sbin/tg-notify "$msg"

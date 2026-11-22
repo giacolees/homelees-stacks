@@ -1,0 +1,18 @@
+# restic exclude patterns for homelees-backup.sh
+/home/backup/restic-cache
+# Regenerable caches / logs
+/opt/stacks/downloads/config/*/MediaCover
+/opt/stacks/downloads/config/*/logs
+/opt/stacks/downloads/config/*/logs.db*
+/opt/stacks/downloads/config/*/Backups
+/opt/stacks/wellness/node_modules
+/opt/stacks/wellness/**/node_modules
+/DATA/AppData/jellyfin/config/cache
+/DATA/AppData/jellyfin/config/log
+/DATA/AppData/jellyfin/config/data/transcodes
+/home/nextcloud/config/data
+/mnt/media/Nextcloud/data/appdata_*/preview
+/mnt/media/Nextcloud/data/*/cache
+/mnt/media/Nextcloud/data/*/uploads
+/mnt/media/Nextcloud/data/nextcloud.log*
+*.tmp

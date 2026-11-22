@@ -1,0 +1,3 @@
+#!/bin/sh
+# smartd -M exec hook: forward SMART warnings to Telegram.
+/usr/local/sbin/tg-notify "⚠️ SMART ${SMARTD_FAILTYPE:-warning} on ${SMARTD_DEVICESTRING:-$SMARTD_DEVICE}: ${SMARTD_MESSAGE:-}"

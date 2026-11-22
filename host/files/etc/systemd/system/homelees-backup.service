@@ -1,0 +1,12 @@
+[Unit]
+Description=homelees nightly restic backup
+Wants=network-online.target
+After=network-online.target docker.service
+RequiresMountsFor=/mnt/media /home
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelees-backup.sh
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=12h

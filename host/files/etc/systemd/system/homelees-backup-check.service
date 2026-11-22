@@ -1,0 +1,12 @@
+[Unit]
+Description=homelees restic repository integrity check
+RequiresMountsFor=/mnt/media
+
+[Service]
+Type=oneshot
+Environment=RESTIC_PASSWORD_FILE=/root/.config/restic/password
+Environment=RESTIC_CACHE_DIR=/home/backup/restic-cache
+ExecStart=/usr/bin/restic -r /mnt/media/Backups/restic check --read-data-subset=5%
+ExecStartPost=/bin/sh -c 'if rclone listremotes | grep -qx gdrive:; then /usr/bin/restic -r rclone:gdrive:homelees-restic check --read-data-subset=2%%; fi'
+Nice=10
+IOSchedulingClass=idle

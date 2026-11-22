@@ -1,0 +1,6 @@
+[Unit]
+Description=homelees daily Telegram digest
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelees-digest

@@ -1,0 +1,6 @@
+[Unit]
+Description=homelees health check (alerts via Telegram on change)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelees-healthcheck

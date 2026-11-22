@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodically purge stale Jellyfin transcode cache files
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=6h
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

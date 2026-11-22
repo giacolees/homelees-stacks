@@ -1,0 +1,15 @@
+[Unit]
+Description=Restrict Docker-published UI ports to the trusted LAN
+Documentation=file:/opt/stacks/README.md
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/docker-published-firewall.sh start
+ExecStop=/usr/local/sbin/docker-published-firewall.sh stop
+
+[Install]
+WantedBy=multi-user.target

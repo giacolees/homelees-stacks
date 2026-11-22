@@ -1,0 +1,15 @@
+[Unit]
+Description=Expose Cockpit and Dockge over the Tailscale tailnet
+Documentation=file:/opt/stacks/README.md
+After=tailscaled.service
+Wants=tailscaled.service
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/tailscale-serve-wait.sh
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

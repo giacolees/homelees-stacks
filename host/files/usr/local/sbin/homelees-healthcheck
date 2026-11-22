@@ -1,0 +1,113 @@
+#!/bin/bash
+# homelees-healthcheck — runs every 10 min (homelees-healthcheck.timer).
+# Detects problems, alerts via tg-notify only when a problem appears or clears,
+# and writes /var/lib/homelees-status/health.json for the Telegram bot/digest.
+set -uo pipefail
+STATE_DIR=/var/lib/homelees-status
+STATE=$STATE_DIR/health.state
+JSON=$STATE_DIR/health.json
+mkdir -p "$STATE_DIR"
+problems=()
+add() { problems+=("$1"); }
+
+# 1. 18 TB media disk mounted (services would otherwise write into / !)
+mountpoint -q /mnt/media || add "/mnt/media is NOT mounted (USB disk dropped?)"
+
+# 2. Disk usage
+while read -r pct mnt; do
+    pct=${pct%\%}
+    case "$mnt" in /mnt/media|/tmp) lim=90 ;; *) lim=85 ;; esac
+    [ "$pct" -ge "$lim" ] && add "disk $mnt at ${pct}% (limit ${lim}%)"
+done < <(df --output=pcent,target / /var /tmp /home /mnt/media 2>/dev/null | tail -n +2)
+
+# 3. Kernel storage errors in the last 11 minutes (HDD has no SMART pass-through)
+errs=$(journalctl -k --since "-11 min" --no-pager -q 2>/dev/null \
+      | grep -cE 'I/O error|Buffer I/O error|Medium Error|EXT4-fs error|device offline|uas_eh_abort|reset (high|super)-speed USB device.*usb-storage|nvme.*(timeout|reset)')
+[ "${errs:-0}" -gt 0 ] && add "kernel storage errors in last 10 min: $errs (journalctl -k)"
+
+# 4. ext4 error counters (persist until fsck)
+for f in /sys/fs/ext4/*/errors_count; do
+    [ -r "$f" ] || continue
+    n=$(cat "$f"); dev=$(basename "$(dirname "$f")")
+    [ "$n" -gt 0 ] && add "ext4 on $dev reports $n filesystem errors (needs fsck)"
+done
+
+# 5. Failed systemd units
+failed=$(systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
+[ -n "$failed" ] && add "failed systemd units: $failed"
+
+# 6. Containers: unhealthy, restarting, or stopped despite a restart policy
+while IFS='|' read -r name state health policy; do
+    [ "$health" = unhealthy ] && add "container $name is unhealthy"
+    [ "$state" = restarting ] && add "container $name is restart-looping"
+    if [ "$state" = exited ] && [ "$policy" != no ] && [ -n "$policy" ]; then
+        add "container $name is stopped (restart=$policy)"
+    fi
+done < <(docker ps -aq | xargs -r docker inspect --format \
+    '{{.Name}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.HostConfig.RestartPolicy.Name}}' 2>/dev/null | sed 's#^/##')
+
+# 7. Backups: last run failed or older than 36 h
+if [ -r $STATE_DIR/backup.json ]; then
+    bst=$(jq -r .status $STATE_DIR/backup.json 2>/dev/null)
+    bts=$(date -d "$(jq -r .time $STATE_DIR/backup.json)" +%s 2>/dev/null || echo 0)
+    [ "$bst" != ok ] && add "last backup status: $bst"
+    [ $(( $(date +%s) - bts )) -gt 129600 ] && add "last successful backup is older than 36 h"
+else
+    add "no backup status file yet"
+fi
+
+# 8. Memory pressure
+avail_mb=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
+[ "$avail_mb" -lt 400 ] && add "low memory: ${avail_mb} MB available"
+
+# 9. Remote access (VPN) up
+if command -v tailscale >/dev/null; then
+    tailscale status --json 2>/dev/null | jq -e '.BackendState=="Running"' >/dev/null || add "Tailscale is not running"
+fi
+if command -v netbird >/dev/null && systemctl is-enabled -q netbird 2>/dev/null; then
+    netbird status 2>/dev/null | grep -q 'Management: Connected' || add "NetBird is not connected"
+fi
+
+# 10. Secrets: every .env / compose.env must be mode 600 (default ACLs on /opt/stacks loosen new files)
+loose=$(find /opt/stacks /etc/homelees -maxdepth 3 \( -name '.env' -o -name '*.env' \) \
+        -not -name '*.example' -not -path '*/node_modules/*' -perm /077 2>/dev/null | tr '\n' ' ')
+[ -n "$loose" ] && add "secrets readable by others (chmod 600 + setfacl -b): $loose"
+
+# ---- report on change ----------------------------------------------------------
+now=$(printf '%s\n' "${problems[@]+"${problems[@]}"}" | sort -u | sed '/^$/d')
+prev=$(cat "$STATE" 2>/dev/null || true)
+new=$(comm -13 <(echo "$prev") <(echo "$now") | sed '/^$/d')
+gone=$(comm -23 <(echo "$prev") <(echo "$now") | sed '/^$/d')
+[ -n "$new" ]  && /usr/local/sbin/tg-notify "🔴 PROBLEM
+$(echo "$new" | sed 's/^/• /')"
+[ -n "$gone" ] && /usr/local/sbin/tg-notify "✅ RESOLVED
+$(echo "$gone" | sed 's/^/• /')"
+echo "$now" > "$STATE"
+jq -n --arg t "$(date -Is)" --arg p "$now" \
+   '{time:$t, ok:($p==""), problems:($p|split("\n")|map(select(.!="")))}' > "$JSON"
+chmod 644 "$JSON"
+
+# ---- metrics snapshot for the Telegram bot / digest (no host access needed there)
+disks=$(df -B1 --output=target,size,used,avail,pcent / /var /tmp /home /mnt/media 2>/dev/null | tail -n +2 | \
+        awk '{gsub("%","",$5); printf "{\"mount\":\"%s\",\"size\":%s,\"used\":%s,\"avail\":%s,\"pct\":%s}\n",$1,$2,$3,$4,$5}' | jq -s .)
+nvme=$(smartctl -H /dev/nvme0 2>/dev/null | awk -F': ' '/overall-health/{print $2}')
+nvme_wear=$(smartctl -A /dev/nvme0 2>/dev/null | awk -F': *' '/Percentage Used/{print $2}')
+nvme_temp=$(smartctl -A /dev/nvme0 2>/dev/null | awk -F': *' '/^Temperature:/{print $2}')
+hdd=$(smartctl -H -d scsi /dev/sda 2>/dev/null | awk -F': ' '/Health Status/{print $2}')
+apt_n=$(apt list --upgradable 2>/dev/null | tail -n +2 | wc -l)
+apt_sec=$(apt list --upgradable 2>/dev/null | grep -c -- '-security')
+reboot=false; [ -e /var/run/reboot-required ] && reboot=true
+running_k=$(uname -r); newest_k=$(ls /boot/vmlinuz-* 2>/dev/null | sed 's#/boot/vmlinuz-##' | sort -V | tail -1)
+[ "$running_k" != "$newest_k" ] && reboot=true
+ts=$(tailscale status --json 2>/dev/null | jq -c '{state: .BackendState, peers: [.Peer[]? | {name: .HostName, os: .OS, online: .Online}]}' 2>/dev/null || echo null)
+nb=null
+if command -v netbird >/dev/null; then nb=$(netbird status 2>/dev/null | jq -Rs '.'); fi
+jq -n --arg t "$(date -Is)" --argjson disks "${disks:-[]}" \
+      --arg nvme "${nvme:-unknown}" --arg wear "${nvme_wear:-?}" --arg temp "${nvme_temp:-?}" --arg hdd "${hdd:-unknown}" \
+      --argjson apt "$apt_n" --argjson aptsec "$apt_sec" --argjson reboot "$reboot" \
+      --arg rk "$running_k" --arg nk "$newest_k" --argjson ts "${ts:-null}" --argjson nb "$nb" \
+  '{time:$t, disks:$disks,
+    smart:{nvme:{health:$nvme, wear:$wear, temp:$temp}, hdd:{health:$hdd, note:"USB enclosure: SCSI health flag only"}},
+    updates:{apt:$apt, security:$aptsec, reboot_needed:$reboot, kernel_running:$rk, kernel_installed:$nk},
+    vpn:{tailscale:$ts, netbird:$nb}}' > $STATE_DIR/metrics.json.tmp && mv $STATE_DIR/metrics.json.tmp $STATE_DIR/metrics.json
+chmod 644 $STATE_DIR/metrics.json

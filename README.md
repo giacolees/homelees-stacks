@@ -1043,3 +1043,18 @@ cd /opt/stacks/telegram-bot
 sudo docker compose build --pull && sudo docker compose up -d   # after editing app/bot.py
 sudo docker compose logs -f bot
 ```
+
+## Host config in git (`/opt/stacks/host`)
+
+- `ports.txt` — **single source of truth** for web-UI ports. Both
+  `/usr/local/sbin/docker-published-firewall.sh` (DOCKER-USER, `docker` kind)
+  and `/usr/local/sbin/tailscale-remote-access.sh` (all kinds) read it. To add or
+  remove a port: edit `ports.txt`, then
+  `sudo systemctl restart docker-published-firewall.service && sudo /usr/local/sbin/tailscale-remote-access.sh`.
+- `files.txt` + `files/` — snapshot of every host config file we manage
+  (sshd drop-in, nftables, daemon.json, smartd, apt/unattended, sysctl, systemd
+  units/timers, `/usr/local/sbin` scripts, landing page). After changing any of
+  them run `host/sync-from-system.sh`, review `git diff`, commit. It refuses
+  secret-looking paths and aborts if a token/private key slips in.
+- `install.sh` — rebuild helper for a fresh Debian host: shows a diff, then
+  installs `files/`. Secrets come from the restic backup, not git.
