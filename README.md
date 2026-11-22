@@ -1011,3 +1011,31 @@ sudo docker compose pull && sudo docker compose up -d && sudo docker compose ps
 cd /opt/stacks && git commit -am "<stack>: bump <image> to <tag>"
 ```
 Rollback = restore the previous tag and `up -d` again (old images are kept 7 days).
+
+## Telegram bot (`/opt/stacks/telegram-bot`)
+
+[@homelees_bot](https://t.me/homelees_bot), **read-only**, answers only the
+admin chat (`TG_CHAT_ID`; others are ignored and logged).
+
+- Commands: `/status`, `/containers`, `/disk`, `/backup`, `/health`, `/smart`,
+  `/vpn`, `/updates`, `/help`.
+- Push alerts come from the host, not the bot: `tg-notify` (health check on
+  change, backup failures, SMART, any failed homelees systemd unit via
+  `notify-failure@.service` `OnFailure=` drop-ins), Diun (image updates), and
+  `homelees-digest.timer` (daily report at 09:00).
+- Built locally (`Dockerfile`, `app/bot.py`; base `python:3.13.17-slim-bookworm`,
+  `python-telegram-bot==22.8`), image `homelees/telegram-bot:1.0.0`.
+- Docker access only through `tecnativa/docker-socket-proxy:0.3.0`
+  (`CONTAINERS=1`, everything else denied) on an `internal` network. Host data
+  comes from `/var/lib/homelees-status/*.json` (read-only mount), written by
+  `homelees-healthcheck` and `homelees-backup`. Container is read-only, non-root,
+  all capabilities dropped, 128 MB limit. No published ports (long polling).
+- Secrets: `.env` here, `diun/.env`, and `/etc/homelees/telegram.env` (all 0600).
+  **Rotate the token**: `/revoke` in @BotFather, then update the three files and
+  `sudo docker compose up -d` in `telegram-bot/` and `diun/`.
+
+```bash
+cd /opt/stacks/telegram-bot
+sudo docker compose build --pull && sudo docker compose up -d   # after editing app/bot.py
+sudo docker compose logs -f bot
+```

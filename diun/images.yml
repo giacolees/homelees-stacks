@@ -81,3 +81,9 @@
 - name: crazymax/diun:4.33.1
   watch_repo: true
   include_tags: ['^\d+\.\d+\.\d+$']
+- name: python:3.13.17-slim-bookworm          # telegram-bot base image (rebuild: compose build --pull)
+  watch_repo: true
+  include_tags: ['^3\.13\.\d+-slim-bookworm$']
+- name: tecnativa/docker-socket-proxy:0.3.0
+  watch_repo: true
+  include_tags: ['^\d+\.\d+\.\d+$']

@@ -1,0 +1,53 @@
+# homelees Telegram status bot (read-only) + Docker socket proxy.
+# Outbound only (Telegram long polling): no published ports, so no firewall /
+# VPN / landing-page entries. Alerts (push) are sent by host scripts via
+# /usr/local/sbin/tg-notify; this bot answers /status, /containers, ... queries.
+name: telegram-bot
+
+services:
+  bot:
+    build: .
+    image: homelees/telegram-bot:1.0.0
+    container_name: telegram-bot
+    restart: unless-stopped
+    env_file: .env                     # TG_TOKEN, TG_CHAT_ID (0600, gitignored)
+    environment:
+      - TZ=Europe/Rome
+      - DOCKER_API=http://socket-proxy:2375
+      - STATUS_DIR=/status
+    volumes:
+      - /var/lib/homelees-status:/status:ro
+    networks: [internal, egress]
+    depends_on: [socket-proxy]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 128m
+
+  socket-proxy:
+    # Only GET /containers (list/inspect) is allowed; everything else is 403.
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: telegram-bot-socket-proxy
+    restart: unless-stopped
+    environment:
+      - CONTAINERS=1
+      - POST=0
+      - INFO=0
+      - IMAGES=0
+      - NETWORKS=0
+      - VOLUMES=0
+      - EXEC=0
+      - LOG_LEVEL=warning
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [internal]
+    read_only: true
+    tmpfs: [/run, /tmp, /var/lib/haproxy]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 64m
+
+networks:
+  internal:
+    internal: true                     # no internet; only bot <-> proxy
+  egress: {}                           # bot -> api.telegram.org
