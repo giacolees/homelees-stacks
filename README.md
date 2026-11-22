@@ -914,7 +914,10 @@ Flow:
   http://192.168.1.70:8084, https://shelfmark.homelees.party (SSO).
   State `/home/books/shelfmark`. Logins = CWA accounts (`AUTH_METHOD=cwa`, CWA's
   `/config` mounted read-only at `/auth`); restart shelfmark after changing a
-  CWA password. Formats limited to `epub,mobi,azw3,fb2` (no PDF: the X4 Pro's
+  CWA password. Shelfmark opens `app.db`/`metadata.db` with SQLite `immutable=1`,
+  so CWA runs with `NETWORK_SHARE_MODE=true` (no WAL) and both DBs were switched
+  to `journal_mode=DELETE`; otherwise new users/passwords stay invisible in
+  `app.db-wal`. Formats limited to `epub,mobi,azw3,fb2` (no PDF: the X4 Pro's
   4.3" screen). Languages `en,it`. Mirrors (they move often — edit in
   `downloads/compose.yaml`): AA `annas-archive.gl`, LibGen `libgen.li`/`libgen.bz`,
   Z-Library `z-library.sk`. Optional `AA_DONATOR_KEY` in `downloads/.env`.
