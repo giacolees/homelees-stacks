@@ -1094,19 +1094,8 @@ SABnzbd `host_whitelist`, Cockpit `/etc/cockpit/cockpit.conf` `Origins`.
 
 ## Retired: Vita (wellness coach) — 2026-11-22
 
-Stack stopped (`docker compose down`, data kept), port 3100 removed from
-`host/ports.txt` (firewall + Tailscale/NetBird forwards), landing page, Homepage,
-Caddy (`vita.homelees.party`), Diun and the backup job. Final DB dump and stack
-config (incl. secrets, 0600): `/mnt/media/Archive/2026-11-22-vita/`. Still on
-disk pending deletion: `/opt/stacks/wellness` (app repo clone, gitignored; DB in
-`db-data/`) and its images. The app source is on GitHub
-(`giacolees/my-wellness-coach`). Also remove it from Komodo's stack list in the UI.
-
-### Trusted-proxy rule (important)
-
-**Loopback (`127.0.0.1:<port>`) is reserved for Caddy.** Apps that trust proxy
-identity headers (Navidrome) whitelist the Docker gateway IP that loopback
-traffic arrives from. Therefore the VPN forwards (`tailscale-remote-access.sh`,
-`netbird-forward@.service`) target **`192.168.1.70:<port>`**, which preserves the
-real client IP, and Caddy strips any client-sent `Remote-*` headers. Never point
-a new forward/proxy at `127.0.0.1:<port>` of a header-trusting app.
+Stack removed (containers, images and `/opt/stacks/wellness` incl. its DB
+files deleted). Port 3100 removed from `host/ports.txt` (firewall +
+Tailscale/NetBird forwards), landing page, Homepage, Caddy, Diun and the backup
+job. Final DB dump + stack config (incl. secrets, 0600):
+`/mnt/media/Archive/2026-11-22-vita/`. Source: GitHub `giacolees/my-wellness-coach`.
