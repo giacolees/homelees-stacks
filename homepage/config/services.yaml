@@ -82,9 +82,3 @@
         icon: sabnzbd.png
         href: http://{{HOMEPAGE_VAR_HOST}}:8081
         description: Usenet
-
-- Health:
-    - Vita:
-        icon: mdi-heart-pulse
-        href: http://{{HOMEPAGE_VAR_HOST}}:3100
-        description: Wellness coach

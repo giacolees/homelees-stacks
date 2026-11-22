@@ -69,12 +69,6 @@
 - name: mongo:8.3.11
   watch_repo: true
   include_tags: ['^\d+\.\d+\.\d+$']
-- name: pgvector/pgvector:0.8.6-pg17
-  watch_repo: true
-  include_tags: ['^\d+\.\d+\.\d+-pg17$']
-- name: postgrest/postgrest:v12.2.12
-  watch_repo: true
-  include_tags: ['^v\d+\.\d+\.\d+$']
 - name: caddy:2.11.4-alpine
   watch_repo: true
   include_tags: ['^2\.\d+\.\d+-alpine$']

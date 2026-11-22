@@ -113,10 +113,6 @@
 	handle @ferdium {
 		reverse_proxy 127.0.0.1:3333
 	}
-	@vita host vita.homelees.party
-	handle @vita {
-		reverse_proxy 127.0.0.1:3100
-	}
 
 	handle {
 		abort

@@ -24,5 +24,3 @@ layout:
     style: column
   Photos:
     style: column
-  Health:
-    style: column

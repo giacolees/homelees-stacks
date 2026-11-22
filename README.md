@@ -311,7 +311,7 @@ mounts `/var/run/docker.sock`.
 
 Imported stacks use `files_on_host = true`,
 `run_directory = /opt/stacks/<name>`, `auto_pull = false`, and the correct
-`project_name` (the `wellness` directory maps to project `my-wellness-coach`).
+`project_name`.
 
 ### Access control
 
@@ -960,7 +960,7 @@ What is backed up (tags):
   `/home/nextcloud/config`, `/home/navidrome/data`, Jellyfin config
   (`/DATA/AppData/jellyfin`), `/etc`, `/usr/local/sbin`, `/var/www/html`, and
   `/home/backup/dumps`: consistent dumps of MariaDB (Nextcloud), Postgres
-  (wellness), MongoDB (Komodo) and an online-API copy of every SQLite DB.
+  MongoDB (Komodo) and an online-API copy of every SQLite DB.
 - `nextcloud` — `/mnt/media/Nextcloud/data` (previews/caches excluded).
 - `music` — `/home/navidrome/music` (local repo only).
 - Not backed up: Movies/TV/Downloads (re-downloadable), transcodes, caches.
@@ -979,7 +979,6 @@ sudo systemctl start homelees-backup.service       # run now
 sudo -E restic -r $R restore latest --tag system --include /home/ferdium --target /home/backup/restore-test
 # Databases: restore the dump from /home/backup/dumps, e.g.
 #   zcat nextcloud-mariadb.sql.gz | docker exec -i nextcloud-db sh -c 'mariadb -uroot -p"$MYSQL_ROOT_PASSWORD"'
-#   zcat wellness-postgres.sql.gz | docker exec -i wellness-db sh -c 'psql -U "$POSTGRES_USER" postgres'
 #   docker exec -i komodo-mongo-1 sh -c 'mongorestore --archive --gzip --drop -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin' < komodo-mongo.archive.gz
 ```
 
@@ -1086,8 +1085,18 @@ sudo docker compose logs -f bot
 | `home` | Homepage | SSO (2FA) |
 | `sonarr` `radarr` `prowlarr` `bazarr` `sab` `torrent` | *arr / SABnzbd / qBittorrent | SSO (`/api` bypassed → app API key) |
 | `cockpit` | Cockpit | SSO + Cockpit login |
-| `jellyfin` `cloud` `music` `subsonic` `requests` `komodo` `beszel` `ferdium` `vita` | apps with their own login / native clients | app login (OIDC next) |
+| `jellyfin` `cloud` `music` `subsonic` `requests` `komodo` `beszel` `ferdium` | apps with their own login / native clients | app login (OIDC next) |
 
 Old `http://<ip>:<port>` URLs keep working. Hostname allow-lists updated for
 the new names: Nextcloud `trusted_domains`, Homepage `HOMEPAGE_ALLOWED_HOSTS`,
 SABnzbd `host_whitelist`, Cockpit `/etc/cockpit/cockpit.conf` `Origins`.
+
+## Retired: Vita (wellness coach) — 2026-11-22
+
+Stack stopped (`docker compose down`, data kept), port 3100 removed from
+`host/ports.txt` (firewall + Tailscale/NetBird forwards), landing page, Homepage,
+Caddy (`vita.homelees.party`), Diun and the backup job. Final DB dump and stack
+config (incl. secrets, 0600): `/mnt/media/Archive/2026-11-22-vita/`. Still on
+disk pending deletion: `/opt/stacks/wellness` (app repo clone, gitignored; DB in
+`db-data/`) and its images. The app source is on GitHub
+(`giacolees/my-wellness-coach`). Also remove it from Komodo's stack list in the UI.

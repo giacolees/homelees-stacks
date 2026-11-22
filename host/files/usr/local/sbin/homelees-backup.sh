@@ -56,8 +56,6 @@ dump() {  # dump <name> <container> <shell command run inside the container>
 }
 dump nextcloud-mariadb.sql.gz nextcloud-db \
     'mariadb-dump --single-transaction --quick --routines --events --all-databases -uroot -p"$MYSQL_ROOT_PASSWORD" | gzip'
-dump wellness-postgres.sql.gz wellness-db \
-    'pg_dumpall -U "$POSTGRES_USER" | gzip'
 dump komodo-mongo.archive.gz komodo-mongo-1 \
     'mongodump --quiet --archive --gzip -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin'
 

@@ -8,7 +8,6 @@
 # After editing: sudo systemctl restart docker-published-firewall.service
 #                sudo /usr/local/sbin/tailscale-remote-access.sh
 3000  docker  homepage
-3100  docker  vita (wellness)
 3333  docker  ferdium
 4533  docker  navidrome
 5055  docker  seerr
