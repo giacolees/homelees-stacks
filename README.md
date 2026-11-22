@@ -931,3 +931,50 @@ replaced file sit next to it with a `.bak-20261122` / `.debian-default` suffix.
   non-Tailscale session (its restart drops Tailscale SSH sessions).
 - **Pending reboot** — kernel 6.1.0-56 is installed; the running kernel stays
   6.1.0-53 until the next (planned) reboot.
+
+## Backups (restic)
+
+Nightly encrypted, deduplicated backups by `/usr/local/sbin/homelees-backup.sh`
+(`homelees-backup.timer`, 03:30) with a weekly integrity check
+(`homelees-backup-check.timer`, Sun 06:00, reads 5% of the data).
+
+| Repo | Location | Contents |
+| :--- | :--- | :--- |
+| Local | `/mnt/media/Backups/restic` (18 TB HDD) | `system`, `nextcloud`, `music` |
+| Offsite | Google Drive (Google One) via rclone remote `gdrive:` → `homelees-restic/` | `system`, `nextcloud` |
+
+The offsite repo is used automatically once `rclone config` has created a
+remote named `gdrive` (type `drive`, scope `drive.file`) for **root**:
+`sudo rclone config`. Until then the script backs up locally and warns.
+
+**Password**: `/root/.config/restic/password` (0600). Both repos use it.
+**Keep a copy in your password manager — without it the backups are unreadable.**
+
+What is backed up (tags):
+- `system` — `/opt/stacks` (incl. `.env` secrets, only ever stored encrypted),
+  `/home/giacolees/komodo`, app state in `/home/{beszel,ferdium,octo-fiesta}`,
+  `/home/nextcloud/config`, `/home/navidrome/data`, Jellyfin config
+  (`/DATA/AppData/jellyfin`), `/etc`, `/usr/local/sbin`, `/var/www/html`, and
+  `/home/backup/dumps`: consistent dumps of MariaDB (Nextcloud), Postgres
+  (wellness), MongoDB (Komodo) and an online-API copy of every SQLite DB.
+- `nextcloud` — `/mnt/media/Nextcloud/data` (previews/caches excluded).
+- `music` — `/home/navidrome/music` (local repo only).
+- Not backed up: Movies/TV/Downloads (re-downloadable), transcodes, caches.
+  Excludes: `/etc/homelees/backup-excludes.txt`.
+
+Retention: 7 daily, 4 weekly, 6 monthly per tag. Status of the last run:
+`/var/lib/homelees-status/backup.json`; logs: `journalctl -u homelees-backup`.
+
+```bash
+# Common commands (as root)
+export RESTIC_PASSWORD_FILE=/root/.config/restic/password RESTIC_CACHE_DIR=/home/backup/restic-cache
+R=/mnt/media/Backups/restic          # or rclone:gdrive:homelees-restic
+sudo -E restic -r $R snapshots
+sudo systemctl start homelees-backup.service       # run now
+# Restore one app into a scratch dir, then compare / copy back:
+sudo -E restic -r $R restore latest --tag system --include /home/ferdium --target /home/backup/restore-test
+# Databases: restore the dump from /home/backup/dumps, e.g.
+#   zcat nextcloud-mariadb.sql.gz | docker exec -i nextcloud-db sh -c 'mariadb -uroot -p"$MYSQL_ROOT_PASSWORD"'
+#   zcat wellness-postgres.sql.gz | docker exec -i wellness-db sh -c 'psql -U "$POSTGRES_USER" postgres'
+#   docker exec -i komodo-mongo-1 sh -c 'mongorestore --archive --gzip --drop -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin' < komodo-mongo.archive.gz
+```
