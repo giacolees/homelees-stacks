@@ -34,6 +34,12 @@ services:
       - ND_ENABLESTARRATING=true
       - ND_SESSIONTIMEOUT=168h
       - ND_LISTENBRAINZ_ENABLED=true
+      # SSO: trust Authelia's Remote-User header ONLY from Caddy, which reaches
+      # Navidrome via 127.0.0.1:4533 -> docker-proxy -> this network's gateway.
+      # VPN forwards target 192.168.1.70 (real source IP), so they can't spoof it.
+      # If the network is recreated with another subnet, SSO just stops (fails safe).
+      - ND_REVERSEPROXYWHITELIST=172.25.0.1/32
+      - ND_REVERSEPROXYUSERHEADER=Remote-User
     ports:
       # LAN + loopback (loopback is used by `tailscale serve`)
       - "192.168.1.70:4533:4533"

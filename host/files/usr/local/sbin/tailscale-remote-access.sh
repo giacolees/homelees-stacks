@@ -22,7 +22,7 @@ if [ "${state:-}" != "Running" ]; then
 fi
 
 for p in $PORTS; do
-    "$TS" serve --bg --tcp="$p" "tcp://127.0.0.1:$p"
+    "$TS" serve --bg --tcp="$p" "tcp://192.168.1.70:$p"   # LAN IP; loopback is reserved for Caddy
 done
 
 echo

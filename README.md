@@ -1085,7 +1085,8 @@ sudo docker compose logs -f bot
 | `home` | Homepage | SSO (2FA) |
 | `sonarr` `radarr` `prowlarr` `bazarr` `sab` `torrent` | *arr / SABnzbd / qBittorrent | SSO (`/api` bypassed → app API key) |
 | `cockpit` | Cockpit | SSO + Cockpit login |
-| `jellyfin` `cloud` `music` `subsonic` `requests` `komodo` `beszel` `ferdium` | apps with their own login / native clients | app login (OIDC next) |
+| `music` | Navidrome | SSO: trusts `Remote-User` from Caddy only (`ND_REVERSEPROXYWHITELIST=172.25.0.1/32`); `/rest`, `/share`, `/ping` bypassed (Subsonic apps keep their own auth) |
+| `jellyfin` `cloud` `subsonic` `requests` `komodo` `beszel` `ferdium` | apps with their own login / native clients | app login (OIDC next) |
 
 Old `http://<ip>:<port>` URLs keep working. Hostname allow-lists updated for
 the new names: Nextcloud `trusted_domains`, Homepage `HOMEPAGE_ALLOWED_HOSTS`,
@@ -1100,3 +1101,12 @@ config (incl. secrets, 0600): `/mnt/media/Archive/2026-11-22-vita/`. Still on
 disk pending deletion: `/opt/stacks/wellness` (app repo clone, gitignored; DB in
 `db-data/`) and its images. The app source is on GitHub
 (`giacolees/my-wellness-coach`). Also remove it from Komodo's stack list in the UI.
+
+### Trusted-proxy rule (important)
+
+**Loopback (`127.0.0.1:<port>`) is reserved for Caddy.** Apps that trust proxy
+identity headers (Navidrome) whitelist the Docker gateway IP that loopback
+traffic arrives from. Therefore the VPN forwards (`tailscale-remote-access.sh`,
+`netbird-forward@.service`) target **`192.168.1.70:<port>`**, which preserves the
+real client IP, and Caddy strips any client-sent `Remote-*` headers. Never point
+a new forward/proxy at `127.0.0.1:<port>` of a header-trusting app.

@@ -22,6 +22,12 @@
 		resolvers 1.1.1.1
 	}
 	encode zstd gzip
+	# Never let a client supply identity headers; only Authelia (forward_auth
+	# copy_headers, applied after this) may set them for an authenticated user.
+	request_header -Remote-User
+	request_header -Remote-Groups
+	request_header -Remote-Email
+	request_header -Remote-Name
 
 	@auth host auth.homelees.party
 	handle @auth {
@@ -91,6 +97,7 @@
 	}
 	@music host music.homelees.party
 	handle @music {
+		import sso                              # Navidrome trusts Remote-User from Caddy
 		reverse_proxy 127.0.0.1:4533
 	}
 	@subsonic host subsonic.homelees.party

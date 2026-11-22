@@ -34,6 +34,10 @@ access_control:
     - domain: torrent.homelees.party
       resources: ['^/api/v2/.*$']
       policy: bypass
+    # Navidrome: Subsonic API (apps, own token auth), public share links, health
+    - domain: music.homelees.party
+      resources: ['^/rest/.*$', '^/share/.*$', '^/ping$']
+      policy: bypass
     - domain: '*.homelees.party'
       policy: two_factor
 session:

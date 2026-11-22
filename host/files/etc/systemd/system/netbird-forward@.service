@@ -1,15 +1,16 @@
-# Forward NetBird-IP:<port> -> 127.0.0.1:<port> (the NetBird equivalent of
+# Forward NetBird-IP:<port> -> 192.168.1.70:<port> (LAN IP, NOT loopback: loopback is
+# reserved for Caddy so apps can trust proxy headers from it only) (the NetBird equivalent of
 # `tailscale serve --tcp`). Instances are managed by netbird-remote-access.sh
 # from /opt/stacks/host/ports.txt. The NetBird IP is read at start.
 [Unit]
-Description=NetBird forward tcp/%i -> 127.0.0.1:%i
+Description=NetBird forward tcp/%i -> 192.168.1.70:%i
 After=netbird.service network-online.target
 Wants=netbird.service
 PartOf=netbird-forward.target
 
 [Service]
 ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do ip -4 -o addr show wt0 2>/dev/null | grep -q inet && exit 0; sleep 2; done; echo "wt0 has no IPv4" >&2; exit 1'
-ExecStart=/bin/sh -c 'NB=$(ip -4 -o addr show wt0 | awk "{print \\$4}" | cut -d/ -f1); exec /usr/bin/socat TCP-LISTEN:%i,bind=$NB,fork,reuseaddr,backlog=128 TCP:127.0.0.1:%i'
+ExecStart=/bin/sh -c 'NB=$(ip -4 -o addr show wt0 | awk "{print \\$4}" | cut -d/ -f1); exec /usr/bin/socat TCP-LISTEN:%i,bind=$NB,fork,reuseaddr,backlog=128 TCP:192.168.1.70:%i'
 Restart=always
 RestartSec=5
 DynamicUser=yes
