@@ -959,7 +959,7 @@ What is backed up (tags):
   `/opt/stacks/komodo`, app state in `/home/{beszel,ferdium,octo-fiesta}`,
   `/home/nextcloud/config`, `/home/navidrome/data`, Jellyfin config
   (`/DATA/AppData/jellyfin`), `/etc`, `/usr/local/sbin`, `/var/www/html`, and
-  `/home/backup/dumps`: consistent dumps of MariaDB (Nextcloud), Postgres
+  `/home/backup/dumps`: consistent dumps of MariaDB (Nextcloud),
   MongoDB (Komodo) and an online-API copy of every SQLite DB.
 - `nextcloud` — `/mnt/media/Nextcloud/data` (previews/caches excluded).
 - `music` — `/home/navidrome/music` (local repo only).
