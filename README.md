@@ -1099,3 +1099,17 @@ files deleted). Port 3100 removed from `host/ports.txt` (firewall +
 Tailscale/NetBird forwards), landing page, Homepage, Caddy, Diun and the backup
 job. Final DB dump + stack config (incl. secrets, 0600):
 `/mnt/media/Archive/2026-11-22-vita/`. Source: GitHub `giacolees/my-wellness-coach`.
+
+### SSO buttons (OIDC, Authelia as provider)
+
+Authelia is an OpenID Connect provider (`identity_providers.oidc` in
+`sso/authelia/configuration.yml`; keys/digests in `/home/sso/authelia/secrets`,
+loaded via `X_AUTHELIA_CONFIG_FILTERS=template`; plaintext client secrets in
+`/root/.config/homelees/oidc/<client>.secret`). Claims policy `homelees` puts
+`preferred_username`, `name`, `email`, `groups` in the ID token.
+
+| App | Setup | Account mapping |
+| :--- | :--- | :--- |
+| Nextcloud | app `user_oidc`, provider "Authelia" (`occ user_oidc:provider`), PKCE, `allow_local_remote_servers=true` (auth host is a private IP) | `preferred_username` → existing user (soft auto-provision); password login still available |
+| Komodo | `KOMODO_OIDC_*` in `komodo/.env`, `KOMODO_HOST=https://komodo.homelees.party`, `KOMODO_OIDC_USE_FULL_EMAIL=true` | new user named by email; created **disabled** → enable + admin in Komodo (Settings → Users) |
+| Beszel | PocketBase: `/_/` → Collections → users → Options → OAuth2 → OpenID Connect (client `beszel`) | by email (user email set to the Authelia email) |

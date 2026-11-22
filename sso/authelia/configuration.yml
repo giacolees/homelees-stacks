@@ -60,3 +60,56 @@ notifier:
   # sudo cat /home/sso/authelia/data/notification.txt
   filesystem:
     filename: /data/notification.txt
+identity_providers:
+  oidc:
+    # Secrets are read from /secrets via the template filter (X_AUTHELIA_CONFIG_FILTERS=template).
+    hmac_secret: {{ secret "/secrets/oidc_hmac_secret" | mindent 0 "|" | msquote }}
+    jwks:
+      - key_id: homelees-rs256
+        algorithm: RS256
+        use: sig
+        key: {{ secret "/secrets/oidc_jwks_rsa.pem" | mindent 10 "|" | msquote }}
+    claims_policies:
+      # Put the user claims into the ID token too (many apps only read the ID token).
+      homelees:
+        id_token: ['preferred_username', 'name', 'email', 'email_verified', 'groups']
+    clients:
+      - client_id: nextcloud
+        client_name: Nextcloud
+        client_secret: {{ secret "/secrets/oidc_nextcloud_digest" | msquote }}
+        public: false
+        authorization_policy: two_factor
+        claims_policy: homelees
+        require_pkce: true
+        pkce_challenge_method: S256
+        redirect_uris: ['https://cloud.homelees.party/apps/user_oidc/code']
+        scopes: ['openid', 'profile', 'email', 'groups']
+        response_types: ['code']
+        grant_types: ['authorization_code']
+        access_token_signed_response_alg: none
+        userinfo_signed_response_alg: none
+        token_endpoint_auth_method: client_secret_post
+      - client_id: komodo
+        client_name: Komodo
+        client_secret: {{ secret "/secrets/oidc_komodo_digest" | msquote }}
+        public: false
+        authorization_policy: two_factor
+        claims_policy: homelees
+        redirect_uris: ['https://komodo.homelees.party/auth/oidc/callback']
+        scopes: ['openid', 'profile', 'email']
+        response_types: ['code']
+        grant_types: ['authorization_code']
+        userinfo_signed_response_alg: none
+        token_endpoint_auth_method: client_secret_basic
+      - client_id: beszel
+        client_name: Beszel
+        client_secret: {{ secret "/secrets/oidc_beszel_digest" | msquote }}
+        public: false
+        authorization_policy: two_factor
+        claims_policy: homelees
+        redirect_uris: ['https://beszel.homelees.party/api/oauth2-redirect']
+        scopes: ['openid', 'profile', 'email']
+        response_types: ['code']
+        grant_types: ['authorization_code']
+        userinfo_signed_response_alg: none
+        token_endpoint_auth_method: client_secret_basic
