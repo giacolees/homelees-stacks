@@ -44,6 +44,16 @@
         href: https://bazarr.homelees.party
         description: Subtitles
 
+- Reading:
+    - Calibre-Web:
+        icon: calibre-web.png
+        href: https://books.homelees.party
+        description: Ebook library, OPDS & KOReader sync
+    - Shelfmark:
+        icon: shelfmark.png
+        href: https://shelfmark.homelees.party
+        description: Ebook search & downloads (VPN)
+
 - Management:
     - Cockpit:
         icon: cockpit.png

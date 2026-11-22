@@ -1,0 +1,39 @@
+# Books - ebook library served to the e-reader.
+#
+#   Shelfmark lives in the downloads stack (behind Gluetun, like qBittorrent);
+#   it searches Anna's Archive / LibGen / Z-Library and drops EPUBs into CWA's
+#   ingest folder. See downloads/compose.yaml.                    :8084
+#   Calibre-Web-Automated   ingests (metadata, covers, convert -> EPUB), serves
+#                           the library over OPDS (/opds) + KOReader sync
+#                           (/kosync) for the Xteink X4 Pro (CrossPoint). :8083
+#
+# Storage layout:
+#   - App state (SSD):  /home/books/cwa -> /config  (CWA app.db = users; also
+#                       mounted read-only into Shelfmark for its logins)
+#   - Ingest (HDD):     /mnt/media/Books/ingest  (CWA deletes files after import)
+#   - Library (HDD):    /mnt/media/Books/library (Calibre library + metadata.db;
+#                       also visible to Jellyfin's Books library at /media/Books)
+#
+# Ports are bound to the LAN address + loopback only. Off-LAN access is via
+# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+name: books
+
+services:
+  calibre-web-automated:
+    image: crocodilestick/calibre-web-automated:${CWA_VERSION}
+    container_name: calibre-web-automated
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - NETWORK_SHARE_MODE=false
+      - HARDCOVER_TOKEN=${HARDCOVER_TOKEN:-}
+    ports:
+      # LAN + loopback (loopback is used by `tailscale serve`)
+      - "192.168.1.70:8083:8083"
+      - "127.0.0.1:8083:8083"
+    volumes:
+      - /home/books/cwa:/config
+      - /mnt/media/Books/ingest:/cwa-book-ingest
+      - /mnt/media/Books/library:/calibre-library

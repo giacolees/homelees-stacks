@@ -33,6 +33,7 @@ SYSTEM_PATHS=(
     /home/beszel /home/ferdium /home/octo-fiesta
     /home/nextcloud/config
     /home/navidrome/data
+    /home/books
     /DATA/AppData/jellyfin
     /etc /usr/local/sbin /var/www/html
     /root/.config/rclone

@@ -50,6 +50,10 @@ that reads/writes the same stacks (it replaced Dockge).
 │   ├── compose.yaml
 │   ├── .env                  # version pin & optional Last.fm keys (gitignored, 0600)
 │   └── .env.example          # committed template with placeholders
+├── books/                    # Calibre-Web-Automated: ebook library, OPDS, KOReader sync
+│   ├── compose.yaml          # (Shelfmark downloader lives in downloads/, behind Gluetun)
+│   ├── .env                  # version pin, optional Hardcover token (gitignored, 0600)
+│   └── .env.example          # committed template with placeholders
 ├── octo-fiesta/              # Subsonic proxy that fills Navidrome gaps from Deezer
 │   ├── compose.yaml
 │   ├── .env                  # version pin & Deezer ARL (gitignored, 0600)
@@ -442,6 +446,8 @@ loopback, so nothing new is exposed on the LAN or the public Internet:
 | Ferdium     | `http://<node>.<tailnet>.ts.net:3333` |
 | Navidrome   | `http://<node>.<tailnet>.ts.net:4533` |
 | Octo-Fiesta | `http://<node>.<tailnet>.ts.net:5275` |
+| Calibre-Web (CWA) | `http://<node>.<tailnet>.ts.net:8083` |
+| Shelfmark   | `http://<node>.<tailnet>.ts.net:8084` |
 
 `tailscale-serve.service` waits for login and applies the config
 automatically. To re-apply manually:
@@ -541,7 +547,9 @@ Full layout on the 18TB disk:
 
 ```
 /mnt/media/
-├── Books/        # Jellyfin "Books" library (flat PDFs/EPUBs)
+├── Books/        # Jellyfin "Books" library (flat PDFs/EPUBs at top level)
+│   ├── ingest/   #   Shelfmark downloads -> CWA ingest (emptied after import)
+│   └── library/  #   Calibre library managed by CWA (served over OPDS)
 ├── Datasets/     # datasets / general storage (not a Jellyfin library)
 ├── Downloads/    # qBittorrent / SABnzbd download area
 ├── Grimmory/     # Retained library data from retired Grimmory service
@@ -611,6 +619,7 @@ The "click to request, and it lands in the right folder" flow:
 | Bazarr      | Subtitles                 | 6767      | `...:6767` |
 | qBittorrent | Torrents (behind Gluetun) | 8080      | `...:8080` |
 | SABnzbd     | Usenet                    | 8081      | `...:8081` |
+| Shelfmark   | Ebook search & download (behind Gluetun) | 8084 | `...:8084` |
 
 ### VPN (Gluetun) — required
 
@@ -880,6 +889,49 @@ writes scheduled backups under `/opt/stacks/komodobackups`; send both to
 encrypted storage. The retired Dockge state at `/opt/dockge/data` (admin hash +
 JWT secret) can be backed up on encrypted storage or deleted.
 
+## Books: Shelfmark + Calibre-Web-Automated (e-reader)
+
+Flow:
+
+    Shelfmark (downloads stack, in Gluetun's netns -> VPN egress)
+      searches Anna's Archive / LibGen / Z-Library, downloads EPUB/MOBI/AZW3/FB2
+      -> /mnt/media/Books/ingest
+    Calibre-Web-Automated (books stack) imports: metadata, covers, convert -> EPUB
+      -> /mnt/media/Books/library  -> OPDS + KOReader sync -> Xteink X4 Pro (CrossPoint)
+
+- **CWA** `crocodilestick/calibre-web-automated:v4.0.8` (`books/.env`),
+  http://192.168.1.70:8083, https://books.homelees.party (SSO; `/opds` and
+  `/kosync` bypass Authelia and use CWA's own basic auth). State
+  `/home/books/cwa` (app.db = user accounts), library `/mnt/media/Books/library`,
+  ingest `/mnt/media/Books/ingest` (files deleted after import).
+- **Shelfmark** `ghcr.io/calibrain/shelfmark:v1.7.0` (standard image, built-in
+  Chromium bypasser), defined in `downloads/compose.yaml` with
+  `network_mode: service:gluetun` like qBittorrent; its port 8084 is published on
+  the `gluetun` service and listed in `FIREWALL_INPUT_PORTS`. All its traffic
+  (search, DDoS-Guard solve, downloads) leaves via the VPN; if Gluetun is down it
+  has no network (kill switch). FlareSolverr is **not** used: DDoS-Guard cookies
+  are IP-bound and FlareSolverr's solve didn't clear Anna's Archive anyway.
+  http://192.168.1.70:8084, https://shelfmark.homelees.party (SSO).
+  State `/home/books/shelfmark`. Logins = CWA accounts (`AUTH_METHOD=cwa`, CWA's
+  `/config` mounted read-only at `/auth`); restart shelfmark after changing a
+  CWA password. Formats limited to `epub,mobi,azw3,fb2` (no PDF: the X4 Pro's
+  4.3" screen). Languages `en,it`. Mirrors (they move often — edit in
+  `downloads/compose.yaml`): AA `annas-archive.gl`, LibGen `libgen.li`/`libgen.bz`,
+  Z-Library `z-library.sk`. Optional `AA_DONATOR_KEY` in `downloads/.env`.
+- Recreating `gluetun` (e.g. changing its ports) also recreates qBittorrent and
+  Shelfmark: `cd /opt/stacks/downloads && sudo docker compose up -d`.
+
+E-reader (Xteink X4 Pro, CrossPoint firmware), on the home Wi-Fi:
+- OPDS: File Transfer -> OPDS Browser -> add `http://192.168.1.70:8083/opds`
+  with a CWA username/password.
+- KOReader sync: server `http://192.168.1.70:8083/kosync` (enable in CWA admin
+  settings first), same CWA credentials.
+
+```bash
+cd /opt/stacks/books && sudo docker compose logs -f          # CWA
+cd /opt/stacks/downloads && sudo docker compose logs -f shelfmark
+```
+
 ## Retired reading services
 
 Shelfarr and Grimmory were removed on 2026-11-04. Their library data is
@@ -957,7 +1009,8 @@ remote named `gdrive` (type `drive`, scope `drive.file`) for **root**:
 What is backed up (tags):
 - `system` — `/opt/stacks` (incl. `.env` secrets, only ever stored encrypted),
   `/opt/stacks/komodo`, app state in `/home/{beszel,ferdium,octo-fiesta}`,
-  `/home/nextcloud/config`, `/home/navidrome/data`, Jellyfin config
+  `/home/nextcloud/config`, `/home/navidrome/data`, `/home/books` (CWA +
+  Shelfmark state), Jellyfin config
   (`/DATA/AppData/jellyfin`), `/etc`, `/usr/local/sbin`, `/var/www/html`, and
   `/home/backup/dumps`: consistent dumps of MariaDB (Nextcloud),
   MongoDB (Komodo) and an online-API copy of every SQLite DB.
@@ -1084,6 +1137,8 @@ sudo docker compose logs -f bot
 | :--- | :--- | :--- |
 | `home` | Homepage | SSO (2FA) |
 | `sonarr` `radarr` `prowlarr` `bazarr` `sab` `torrent` | *arr / SABnzbd / qBittorrent | SSO (`/api` bypassed → app API key) |
+| `shelfmark` | Shelfmark | SSO + Shelfmark login (CWA accounts) |
+| `books` | Calibre-Web-Automated | SSO; `/opds`, `/kosync` bypassed (CWA basic auth, e-readers) |
 | `cockpit` | Cockpit | SSO + Cockpit login |
 | `music` | Navidrome | SSO: trusts `Remote-User` from Caddy only (`ND_REVERSEPROXYWHITELIST=172.25.0.1/32`); `/rest`, `/share`, `/ping` bypassed (Subsonic apps keep their own auth) |
 | `jellyfin` `cloud` `subsonic` `requests` `komodo` `beszel` `ferdium` | apps with their own login / native clients | app login (OIDC next) |

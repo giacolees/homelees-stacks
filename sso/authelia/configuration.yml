@@ -38,6 +38,10 @@ access_control:
     - domain: music.homelees.party
       resources: ['^/rest/.*$', '^/share/.*$', '^/ping$']
       policy: bypass
+    # Calibre-Web-Automated: OPDS catalog + KOReader sync for e-readers (CWA basic auth)
+    - domain: books.homelees.party
+      resources: ['^/opds([/?].*)?$', '^/kosync([/?].*)?$']
+      policy: bypass
     - domain: '*.homelees.party'
       policy: two_factor
 session:

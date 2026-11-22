@@ -14,6 +14,9 @@ layout:
   Media:
     style: row
     columns: 3
+  Reading:
+    style: row
+    columns: 2
   Management:
     style: row
     columns: 4

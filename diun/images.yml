@@ -87,3 +87,9 @@
 - name: caddy:2.11.4-alpine               # sso/caddy base (rebuild: compose build --pull caddy)
   watch_repo: true
   include_tags: ['^2\.\d+\.\d+-alpine$']
+- name: crocodilestick/calibre-web-automated:v4.0.8
+  watch_repo: true
+  include_tags: ['^v\d+\.\d+\.\d+$']
+- name: ghcr.io/calibrain/shelfmark:v1.7.0
+  watch_repo: true
+  include_tags: ['^v\d+\.\d+\.\d+$']

@@ -50,6 +50,16 @@
 		import sso
 		reverse_proxy 127.0.0.1:7878
 	}
+	@shelfmark host shelfmark.homelees.party
+	handle @shelfmark {
+		import sso                              # + Shelfmark login (CWA accounts)
+		reverse_proxy 127.0.0.1:8084
+	}
+	@books host books.homelees.party
+	handle @books {
+		import sso                              # /opds, /kosync bypassed (CWA basic auth)
+		reverse_proxy 127.0.0.1:8083
+	}
 	@prowlarr host prowlarr.homelees.party
 	handle @prowlarr {
 		import sso

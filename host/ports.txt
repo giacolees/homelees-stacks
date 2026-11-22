@@ -17,6 +17,8 @@
 8080  docker  qbittorrent (gluetun)
 8081  docker  sabnzbd
 8082  docker  nextcloud
+8083  docker  calibre-web-automated (books)
+8084  docker  shelfmark (gluetun)
 8090  docker  beszel
 8096  docker  jellyfin
 8989  docker  sonarr
