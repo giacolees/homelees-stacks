@@ -1,0 +1,55 @@
+# Authelia — login portal for *.homelees.party (https://auth.homelees.party).
+# Secrets are injected via *_FILE env vars from /home/sso/authelia/secrets.
+theme: auto
+server:
+  address: 'tcp://:9091/'
+log:
+  level: info
+totp:
+  issuer: homelees.party
+webauthn:
+  disable: false
+  enable_passkey_login: true
+  display_name: homelees
+  timeout: 60s
+  selection_criteria:
+    discoverability: preferred
+    user_verification: preferred
+authentication_backend:
+  password_reset:
+    disable: true
+  file:
+    path: /config/users.yml
+    watch: true
+access_control:
+  default_policy: deny
+  rules:
+    # API endpoints authenticate with the app's own API key (mobile apps, *arr <-> *arr)
+    - domain: ['sonarr.homelees.party', 'radarr.homelees.party', 'prowlarr.homelees.party', 'bazarr.homelees.party', 'sab.homelees.party']
+      resources: ['^/api([/?].*)?$', '^/feed([/?].*)?$', '^/[0-9]+/api([/?].*)?$', '^/[0-9]+/download([/?].*)?$']
+      policy: bypass
+    - domain: torrent.homelees.party
+      resources: ['^/api/v2/.*$']
+      policy: bypass
+    - domain: '*.homelees.party'
+      policy: one_factor
+session:
+  cookies:
+    - domain: homelees.party
+      authelia_url: https://auth.homelees.party
+      default_redirection_url: https://home.homelees.party
+      expiration: 12h
+      inactivity: 4h
+      remember_me: 1M
+regulation:
+  max_retries: 5
+  find_time: 2m
+  ban_time: 15m
+storage:
+  local:
+    path: /data/db.sqlite3
+notifier:
+  # No mail server: one-time codes (e.g. to register a passkey) are written here:
+  # sudo cat /home/sso/authelia/data/notification.txt
+  filesystem:
+    filename: /data/notification.txt

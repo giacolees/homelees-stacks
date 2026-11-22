@@ -1,0 +1,124 @@
+# homelees reverse proxy: https://<service>.homelees.party
+# DNS: *.homelees.party -> 10.200.82.85 (NetBird, private). Wildcard cert via
+# Cloudflare DNS-01, so no inbound port 80/443 from the internet is needed.
+{
+	default_bind 192.168.1.70 10.200.82.85 127.0.0.1
+	auto_https disable_redirects        # :80 belongs to Apache (landing page)
+	admin off
+}
+
+# Authelia forward-auth (browser login + passkeys). API paths are bypassed in
+# Authelia's access_control so mobile apps keep using their API keys.
+(sso) {
+	forward_auth 127.0.0.1:9091 {
+		uri /api/authz/forward-auth
+		copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+	}
+}
+
+*.homelees.party {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+		resolvers 1.1.1.1
+	}
+	encode zstd gzip
+
+	@auth host auth.homelees.party
+	handle @auth {
+		reverse_proxy 127.0.0.1:9091
+	}
+
+	# ---- behind SSO (browser-only admin UIs) --------------------------------
+	@home host home.homelees.party
+	handle @home {
+		import sso
+		reverse_proxy 127.0.0.1:3000
+	}
+	@sonarr host sonarr.homelees.party
+	handle @sonarr {
+		import sso
+		reverse_proxy 127.0.0.1:8989
+	}
+	@radarr host radarr.homelees.party
+	handle @radarr {
+		import sso
+		reverse_proxy 127.0.0.1:7878
+	}
+	@prowlarr host prowlarr.homelees.party
+	handle @prowlarr {
+		import sso
+		reverse_proxy 127.0.0.1:9696
+	}
+	@bazarr host bazarr.homelees.party
+	handle @bazarr {
+		import sso
+		reverse_proxy 127.0.0.1:6767
+	}
+	@sab host sab.homelees.party
+	handle @sab {
+		import sso
+		reverse_proxy 127.0.0.1:8081
+	}
+	@torrent host torrent.homelees.party
+	handle @torrent {
+		import sso
+		reverse_proxy 127.0.0.1:8080 {
+			header_up Host 127.0.0.1:8080        # qBittorrent host-header validation
+			header_up -Origin
+			header_up -Referer
+		}
+	}
+	@cockpit host cockpit.homelees.party
+	handle @cockpit {
+		import sso
+		reverse_proxy https://127.0.0.1:9090 {
+			transport http {
+				tls_insecure_skip_verify     # Cockpit's self-signed cert, loopback only
+			}
+		}
+	}
+
+	# ---- own login / native apps (SSO via OIDC in the next stage) ------------
+	@jellyfin host jellyfin.homelees.party
+	handle @jellyfin {
+		reverse_proxy 127.0.0.1:8096
+	}
+	@cloud host cloud.homelees.party
+	handle @cloud {
+		redir /.well-known/carddav /remote.php/dav 301
+		redir /.well-known/caldav /remote.php/dav 301
+		reverse_proxy 127.0.0.1:8082
+	}
+	@music host music.homelees.party
+	handle @music {
+		reverse_proxy 127.0.0.1:4533
+	}
+	@subsonic host subsonic.homelees.party
+	handle @subsonic {
+		reverse_proxy 127.0.0.1:5275           # octo-fiesta (Subsonic apps)
+	}
+	@requests host requests.homelees.party
+	handle @requests {
+		reverse_proxy 127.0.0.1:5055
+	}
+	@komodo host komodo.homelees.party
+	handle @komodo {
+		reverse_proxy 127.0.0.1:9120
+	}
+	@beszel host beszel.homelees.party
+	handle @beszel {
+		reverse_proxy 127.0.0.1:8090
+	}
+	@ferdium host ferdium.homelees.party
+	handle @ferdium {
+		reverse_proxy 127.0.0.1:3333
+	}
+	@vita host vita.homelees.party
+	handle @vita {
+		reverse_proxy 127.0.0.1:3100
+	}
+
+	handle {
+		abort
+	}
+}

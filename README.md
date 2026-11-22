@@ -1058,3 +1058,34 @@ sudo docker compose logs -f bot
   secret-looking paths and aborts if a token/private key slips in.
 - `install.sh` — rebuild helper for a fresh Debian host: shows a diff, then
   installs `files/`. Secrets come from the restic backup, not git.
+
+## SSO & HTTPS (`/opt/stacks/sso`) — https://\<service\>.homelees.party
+
+- **DNS**: Cloudflare zone `homelees.party`, one record `*.homelees.party A
+  10.200.82.85` (the server's **NetBird** IP; DNS-only, not proxied). Names work
+  on every NetBird device; nothing is reachable from the internet. Cloudflare API
+  token (Zone DNS edit, this zone only): `/etc/homelees/cloudflare.env` and
+  `sso/.env` (0600).
+- **Caddy** (`caddy/Caddyfile`, custom build with `caddy-dns/cloudflare`,
+  host network, binds `192.168.1.70`, `10.200.82.85`, `127.0.0.1` :443;
+  `net.ipv4.ip_nonlocal_bind=1` so it starts before NetBird at boot). Wildcard
+  Let's Encrypt cert via DNS-01, auto-renewed, stored in `/home/sso/caddy/data`.
+  Apache keeps :80. Docker pulls go through `mirror.gcr.io` (daemon.json) to
+  avoid Docker Hub rate limits.
+- **Authelia** 4.39 (`authelia/configuration.yml`, loopback :9091) at
+  https://auth.homelees.party — password + **passkeys** (Face ID / Touch ID).
+  User file `/home/sso/authelia/users.yml`; secrets `/home/sso/authelia/secrets`;
+  initial password `/root/.config/homelees/authelia-password`. No mail server:
+  one-time codes (passkey registration) land in
+  `/home/sso/authelia/data/notification.txt`.
+
+| Host | Service | Auth |
+| :--- | :--- | :--- |
+| `home` | Homepage | SSO |
+| `sonarr` `radarr` `prowlarr` `bazarr` `sab` `torrent` | *arr / SABnzbd / qBittorrent | SSO (`/api` bypassed → app API key) |
+| `cockpit` | Cockpit | SSO + Cockpit login |
+| `jellyfin` `cloud` `music` `subsonic` `requests` `komodo` `beszel` `ferdium` `vita` | apps with their own login / native clients | app login (OIDC next) |
+
+Old `http://<ip>:<port>` URLs keep working. Hostname allow-lists updated for
+the new names: Nextcloud `trusted_domains`, Homepage `HOMEPAGE_ALLOWED_HOSTS`,
+SABnzbd `host_whitelist`, Cockpit `/etc/cockpit/cockpit.conf` `Origins`.

@@ -1,0 +1,41 @@
+# SSO + HTTPS front door: Caddy (https://*.homelees.party) + Authelia.
+# Caddy uses the host network (binds 443 on LAN, NetBird and loopback IPs and
+# reaches every service on its existing 127.0.0.1:<port>). Authelia is
+# loopback-only. See /opt/stacks/README.md "SSO".
+name: sso
+
+services:
+  caddy:
+    build: ./caddy
+    image: homelees/caddy-cloudflare:2.11.4-cf0.2.4
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host
+    env_file: .env                         # CF_API_TOKEN (Cloudflare, DNS edit on homelees.party)
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /home/sso/caddy/data:/data
+      - /home/sso/caddy/config:/config
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    depends_on: [authelia]
+
+  authelia:
+    image: authelia/authelia:4.39.28
+    container_name: authelia
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      - TZ=Europe/Rome
+      - X_AUTHELIA_CONFIG=/config/configuration.yml
+      - AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE=/secrets/jwt_secret
+      - AUTHELIA_SESSION_SECRET_FILE=/secrets/session_secret
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE=/secrets/storage_encryption_key
+    ports:
+      - "127.0.0.1:9091:9091"
+    volumes:
+      - ./authelia/configuration.yml:/config/configuration.yml:ro
+      - /home/sso/authelia/users.yml:/config/users.yml
+      - /home/sso/authelia/data:/data
+      - /home/sso/authelia/secrets:/secrets:ro
+    security_opt: [no-new-privileges:true]

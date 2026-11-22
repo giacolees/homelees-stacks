@@ -19,7 +19,7 @@ services:
       - HOMEPAGE_VAR_KOMODO_KEY=${KOMODO_API_KEY}
       - HOMEPAGE_VAR_KOMODO_SECRET=${KOMODO_API_SECRET}
       # Hosts allowed to load the dashboard (Next.js host check).
-      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.70:3000,homelees.lungfish-pike.ts.net:3000,100.87.187.75:3000,homelees.netbird.cloud:3000,10.200.82.85:3000,localhost:3000,127.0.0.1:3000
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.70:3000,homelees.lungfish-pike.ts.net:3000,100.87.187.75:3000,homelees.netbird.cloud:3000,10.200.82.85:3000,home.homelees.party,localhost:3000,127.0.0.1:3000
     volumes:
       - ./config:/app/config
     ports:

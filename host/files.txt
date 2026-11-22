@@ -43,3 +43,4 @@
 /etc/systemd/system/netbird-forward@.service
 /etc/systemd/system/netbird-forward.target
 /usr/local/sbin/netbird-remote-access.sh
+/etc/cockpit/cockpit.conf

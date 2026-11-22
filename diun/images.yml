@@ -87,3 +87,9 @@
 - name: tecnativa/docker-socket-proxy:0.3.0
   watch_repo: true
   include_tags: ['^\d+\.\d+\.\d+$']
+- name: authelia/authelia:4.39.28
+  watch_repo: true
+  include_tags: ['^4\.\d+\.\d+$']
+- name: caddy:2.11.4-alpine               # sso/caddy base (rebuild: compose build --pull caddy)
+  watch_repo: true
+  include_tags: ['^2\.\d+\.\d+-alpine$']
