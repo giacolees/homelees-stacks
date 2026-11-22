@@ -1,84 +1,89 @@
-# All links use {{HOMEPAGE_VAR_HOST}}, set in compose.yaml.
+# Links use the HTTPS names https://<service>.homelees.party (Caddy + Authelia SSO,
+# /opt/stacks/sso). Old http://<host>:<port> URLs still work as a fallback.
 # Server status is provided by the Glances info widget (widgets.yaml).
 
 - Sync:
     - Ferdium:
         icon: ferdium.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:3333
+        href: https://ferdium.homelees.party
         description: Client sync & workspaces
 
 - Files:
     - Nextcloud:
         icon: nextcloud.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8082
+        href: https://cloud.homelees.party
         description: Files, photos, calendar
 
 - Photos:
     - Memories:
         icon: memories.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8082/apps/memories
+        href: https://cloud.homelees.party/apps/memories
         description: Photos (Nextcloud)
 
 - Music:
     - Navidrome:
         icon: navidrome.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:4533
+        href: https://music.homelees.party
         description: Music streaming (Subsonic)
     - Octo-Fiesta:
         icon: mdi-music-note-plus
-        href: http://{{HOMEPAGE_VAR_HOST}}:5275
+        href: https://subsonic.homelees.party
         description: Deezer → Navidrome library filler
 
 - Media:
     - Jellyfin:
         icon: jellyfin.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8096
+        href: https://jellyfin.homelees.party
         description: Movies, TV, music, books
     - Seerr:
         icon: seerr.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:5055
+        href: https://requests.homelees.party
         description: Request movies & shows
     - Bazarr:
         icon: bazarr.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:6767
+        href: https://bazarr.homelees.party
         description: Subtitles
 
 - Management:
     - Cockpit:
         icon: cockpit.png
-        href: https://{{HOMEPAGE_VAR_HOST}}:9090
+        href: https://cockpit.homelees.party
         description: Server management
     - Komodo:
         icon: komodo.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:9120
+        href: https://komodo.homelees.party
         description: Containers & deploys
     - Tailscale:
         icon: tailscale.png
         href: https://login.tailscale.com/admin/machines
         description: Tailnet admin
+    - NetBird:
+        icon: netbird.png
+        href: https://app.netbird.io/peers
+        description: NetBird peers & access
     - Beszel:
         icon: beszel.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8090
+        href: https://beszel.homelees.party
         description: Host & container stats
 
 - Downloads:
     - Sonarr:
         icon: sonarr.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8989
+        href: https://sonarr.homelees.party
         description: TV automation
     - Radarr:
         icon: radarr.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:7878
+        href: https://radarr.homelees.party
         description: Movie automation
     - Prowlarr:
         icon: prowlarr.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:9696
+        href: https://prowlarr.homelees.party
         description: Indexers
     - qBittorrent:
         icon: qbittorrent.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8080
+        href: https://torrent.homelees.party
         description: Torrents (VPN)
     - SABnzbd:
         icon: sabnzbd.png
-        href: http://{{HOMEPAGE_VAR_HOST}}:8081
+        href: https://sab.homelees.party
         description: Usenet
