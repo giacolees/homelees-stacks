@@ -230,6 +230,16 @@ Do not then deploy the same stack from both Dockge and Komodo.
 
 ## Git & credentials
 
+**GitHub mirror (private): `giacolees/homelees-stacks`** (since 2026-11-23).
+Push with `git push` (remote `origin` = `git@github-homelees-stacks:giacolees/homelees-stacks.git`).
+Auth is a **deploy key** scoped to that repo only: `~/.ssh/github_homelees_stacks`
+(+ `Host github-homelees-stacks` in `~/.ssh/config`); revoke it in the repo's
+Settings → Deploy keys. A **pre-commit hook** (`.git/hooks/pre-commit`, not
+versioned) refuses `.env`/key/`users.yml` files and runs gitleaks (offline,
+pinned container) on staged changes; full-history scan:
+`sudo docker run --rm --network none -v /opt/stacks:/repo:ro zricethezav/gitleaks:v8.21.2 git /repo --redact`.
+Keep the repo private: it maps IPs, domain, tailnet and firewall rules.
+
 `/opt/stacks` is a git repo. `.gitignore` excludes `.env`, key material, and
 common state directories. **Never commit credentials, tokens, `.env` files,
 private keys, or Komodo's `.env` / Dockge's `data/`.** Commit only
