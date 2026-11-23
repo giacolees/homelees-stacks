@@ -41,6 +41,11 @@ services:
       - 127.0.0.1:9120:9120
       - 192.168.1.70:9120:9120
     env_file: ./.env
+    # OIDC discovery runs only at startup; the router's DNS (192.168.1.254) sometimes
+    # times out, which leaves "OIDC Provider not available" until the next restart.
+    # Pin Authelia's name to Caddy's NetBird IP (static) so login never depends on it.
+    extra_hosts:
+      - "auth.homelees.party:10.200.82.85"
     environment:
       KOMODO_DATABASE_ADDRESS: mongo:27017
     volumes:
