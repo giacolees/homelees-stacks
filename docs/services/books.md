@@ -30,7 +30,7 @@ Flow:
   CWA password. Shelfmark opens `app.db`/`metadata.db` with SQLite `immutable=1`,
   so CWA runs with `NETWORK_SHARE_MODE=true` (no WAL) and both DBs were switched
   to `journal_mode=DELETE`; otherwise new users/passwords stay invisible in
-  `app.db-wal`. Formats limited to `epub,mobi,azw3,fb2` (no PDF: the X4 Pro's
+  `app.db-wal`. Formats `epub,mobi,azw3,fb2,pdf` (PDF added 2026-11-23 for coursebooks and excluded from CWA auto-convert, so it is imported as PDF; read those on a tablet/PC, not the X4 Pro's
   4.3" screen). Languages `en,it`. Mirrors (they move often — edit in
   `downloads/compose.yaml`): AA `annas-archive.gl`, LibGen `libgen.li`/`libgen.bz`,
   Z-Library `z-library.sk`. Optional `AA_DONATOR_KEY` in `downloads/.env`.

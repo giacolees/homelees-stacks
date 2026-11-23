@@ -108,8 +108,8 @@ services:
       - CALIBRE_WEB_URL=http://192.168.1.70:8083
       - LIBRARY_CHECK_CALIBRE_ENABLED=true
       - CALIBRE_LIBRARY_DB_PATH=/calibre-library/metadata.db
-      # E-reader friendly formats only (CWA converts non-EPUB to EPUB; no PDF)
-      - SUPPORTED_FORMATS=epub,mobi,azw3,fb2
+      # E-reader formats first; PDF allowed for textbooks/coursebooks (read on tablet/PC)
+      - SUPPORTED_FORMATS=epub,mobi,azw3,fb2,pdf
       - BOOK_LANGUAGE=en,it
       - DIRECT_DOWNLOAD_ENABLED=true
       - LIBGEN_SEARCH_ENABLED=true
