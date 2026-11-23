@@ -2,7 +2,7 @@
 # Rebuild helper: install ./files/* onto a fresh host (shows a diff first).
 # Secrets are NOT in git: restore /etc/homelees/telegram.env,
 # /root/.config/restic/password, /root/.config/rclone and the stacks' .env
-# files from the restic backup (see README "Backups").
+# files from the restic backup (see docs/monitoring.md "Backups").
 set -eu
 cd "$(dirname "$0")/files"
 find . -type f | sed 's#^\.##' | sort | while read -r f; do

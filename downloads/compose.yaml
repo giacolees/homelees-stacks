@@ -14,7 +14,7 @@
 # starting, then: sudo docker compose -f /opt/stacks/downloads/compose.yaml up -d
 #
 # Ports are bound to the LAN address + loopback only; remote access is via
-# `tailscale serve`. See /opt/stacks/README.md.
+# `tailscale serve`. See /opt/stacks/docs/services/downloads.md.
 name: downloads
 
 x-arr: &arr

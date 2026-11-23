@@ -3,7 +3,7 @@
 #   1. consistent dumps of every database (MariaDB, Postgres, Mongo, SQLite)
 #   2. restic snapshots to the local HDD repo and (if configured) Google Drive
 #   3. retention + status file + notification
-# Docs: /opt/stacks/README.md "Backups". Restore: `restic -r <repo> restore`.
+# Docs: /opt/stacks/docs/monitoring.md "Backups (restic)". Restore: `restic -r <repo> restore`.
 set -Eeuo pipefail
 umask 077
 

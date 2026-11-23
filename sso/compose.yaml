@@ -1,7 +1,7 @@
 # SSO + HTTPS front door: Caddy (https://*.homelees.party) + Authelia.
 # Caddy uses the host network (binds 443 on LAN, NetBird and loopback IPs and
 # reaches every service on its existing 127.0.0.1:<port>). Authelia is
-# loopback-only. See /opt/stacks/README.md "SSO".
+# loopback-only. See /opt/stacks/docs/access.md "SSO".
 name: sso
 
 services:

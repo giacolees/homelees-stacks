@@ -41,6 +41,6 @@ services:
     environment:
       - LISTEN=45876
       - HUB_URL=http://localhost:8090
-      # Set from the hub after the system is added (see README).
+      # Set from the hub after the system is added (see docs/services/beszel.md).
       - KEY=${BESZEL_AGENT_KEY}
       - TOKEN=${BESZEL_AGENT_TOKEN}

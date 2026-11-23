@@ -11,7 +11,7 @@
 #
 # Config lives in ./config/jellyseerr (gitignored). Ports are bound to the LAN
 # address + loopback only; remote access is via `tailscale serve`.
-# See /opt/stacks/README.md.
+# See /opt/stacks/docs/services/requests.md.
 name: requests
 
 services:
