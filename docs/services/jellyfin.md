@@ -12,7 +12,7 @@ Adopted from the orphaned CasaOS container into a managed stack.
 - Media: `/mnt/media` (the 18TB disk) mounted into the container at `/media`
 - Secret: `/opt/stacks/jellyfin/.env` (`OPENAI_API_KEY`, gitignored, mode 0600)
 - Ports: bound to `192.168.1.70` + `127.0.0.1` only; DLNA on the LAN address.
-  Remote access is via `tailscale serve` -> `tcp/8096` -> `127.0.0.1:8096`.
+  Remote access is via NetBird -> `https://jellyfin.homelees.party` (Caddy -> `127.0.0.1:8096`).
 - Firewall: `docker-published-firewall.service` drops non-LAN traffic to all
   published Docker UI ports (8096 included) in `DOCKER-USER`. The built-in
   HTTPS port 8920 is no longer published (removed 2026-11-22; unused).
@@ -28,7 +28,7 @@ sudo docker compose pull && sudo docker compose up -d    # update
 sudo docker compose down                                 # stop/remove
 ```
 
-First run: open `http://192.168.1.70:8096` (LAN) or the tailnet URL and complete
+First run: open `http://192.168.1.70:8096` (LAN) or `https://jellyfin.homelees.party` and complete
 the setup wizard.
 
 ### Media library

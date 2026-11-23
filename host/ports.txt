@@ -1,12 +1,12 @@
 # Single source of truth for web-UI ports exposed on LAN + VPN.
 #   <port>  <kind>   <service>
 # kind=docker : Docker-published port -> LAN-only DROP rule in DOCKER-USER
-#               (docker-published-firewall.sh) AND VPN forward (remote-access script)
-# kind=host   : host service (filtered by /etc/nftables.conf) -> VPN forward only
+#               (docker-published-firewall.sh) AND NetBird forward if allow-listed in netbird-direct.txt
+# kind=host   : host service (filtered by /etc/nftables.conf) -> NetBird forward only if allow-listed
 # NOTE: 443 (Caddy, https://*.homelees.party) is NOT listed: Caddy binds the LAN,
 # NetBird and loopback IPs itself (host network); LAN access via /etc/nftables.conf.
 # After editing: sudo systemctl restart docker-published-firewall.service
-#                sudo /usr/local/sbin/tailscale-remote-access.sh
+#                sudo /usr/local/sbin/netbird-remote-access.sh
 3000  docker  homepage
 3333  docker  ferdium
 4533  docker  navidrome

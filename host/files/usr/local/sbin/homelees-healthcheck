@@ -63,9 +63,6 @@ avail_mb=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
 [ "$avail_mb" -lt 400 ] && add "low memory: ${avail_mb} MB available"
 
 # 9. Remote access (VPN) up
-if command -v tailscale >/dev/null; then
-    tailscale status --json 2>/dev/null | jq -e '.BackendState=="Running"' >/dev/null || add "Tailscale is not running"
-fi
 if command -v netbird >/dev/null && [ -e /etc/homelees/netbird-enrolled ]; then
     netbird status 2>/dev/null | grep -q 'Management: Connected' || add "NetBird is not connected"
 fi
@@ -101,15 +98,14 @@ apt_sec=$(apt list --upgradable 2>/dev/null | grep -c -- '-security')
 reboot=false; [ -e /var/run/reboot-required ] && reboot=true
 running_k=$(uname -r); newest_k=$(ls /boot/vmlinuz-* 2>/dev/null | sed 's#/boot/vmlinuz-##' | sort -V | tail -1)
 [ "$running_k" != "$newest_k" ] && reboot=true
-ts=$(tailscale status --json 2>/dev/null | jq -c '{state: .BackendState, peers: [.Peer[]? | {name: .HostName, os: .OS, online: .Online}]}' 2>/dev/null || echo null)
 nb=null
 if command -v netbird >/dev/null; then nb=$(netbird status 2>/dev/null | jq -Rs '.'); fi
 jq -n --arg t "$(date -Is)" --argjson disks "${disks:-[]}" \
       --arg nvme "${nvme:-unknown}" --arg wear "${nvme_wear:-?}" --arg temp "${nvme_temp:-?}" --arg hdd "${hdd:-unknown}" \
       --argjson apt "$apt_n" --argjson aptsec "$apt_sec" --argjson reboot "$reboot" \
-      --arg rk "$running_k" --arg nk "$newest_k" --argjson ts "${ts:-null}" --argjson nb "$nb" \
+      --arg rk "$running_k" --arg nk "$newest_k" --argjson nb "$nb" \
   '{time:$t, disks:$disks,
     smart:{nvme:{health:$nvme, wear:$wear, temp:$temp}, hdd:{health:$hdd, note:"USB enclosure: SCSI health flag only"}},
     updates:{apt:$apt, security:$aptsec, reboot_needed:$reboot, kernel_running:$rk, kernel_installed:$nk},
-    vpn:{tailscale:$ts, netbird:$nb}}' > $STATE_DIR/metrics.json.tmp && mv $STATE_DIR/metrics.json.tmp $STATE_DIR/metrics.json
+    vpn:{netbird:$nb}}' > $STATE_DIR/metrics.json.tmp && mv $STATE_DIR/metrics.json.tmp $STATE_DIR/metrics.json
 chmod 644 $STATE_DIR/metrics.json

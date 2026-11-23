@@ -37,7 +37,6 @@ services:
       - mongo
     ports:
       # Bind loopback + LAN explicitly instead of 0.0.0.0.
-      # 0.0.0.0:9120 collides with Tailscale Serve on <tailscale-ip>:9120.
       - 127.0.0.1:9120:9120
       - ${LAN_IP:?run host/site-env.sh}:9120:9120
     env_file: ./.env

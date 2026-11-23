@@ -1,0 +1,14 @@
+[Unit]
+Description=Restrict Cockpit UI (tcp/9090) to the trusted LAN
+Documentation=file:/opt/stacks/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/cockpit-firewall.sh start
+ExecStop=/usr/local/sbin/cockpit-firewall.sh stop
+
+[Install]
+WantedBy=multi-user.target

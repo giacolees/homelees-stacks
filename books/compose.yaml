@@ -15,7 +15,8 @@
 #                       also visible to Jellyfin's Books library at /media/Books)
 #
 # Ports are bound to the LAN address + loopback only. Off-LAN access is via
-# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+# NetBird -> https://<name>.<domain> (Caddy uses the loopback port);
+# `docker-published-firewall.service` drops non-LAN traffic.
 name: books
 
 services:
@@ -32,7 +33,7 @@ services:
       - NETWORK_SHARE_MODE=true
       - HARDCOVER_TOKEN=${HARDCOVER_TOKEN:-}
     ports:
-      # LAN + loopback (loopback is used by `tailscale serve`)
+      # LAN + loopback (loopback is Caddy's private path)
       - "${LAN_IP:?run host/site-env.sh}:8083:8083"
       - "127.0.0.1:8083:8083"
     volumes:

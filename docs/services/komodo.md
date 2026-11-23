@@ -8,7 +8,7 @@ Komodo manages the same `/opt/stacks` directory as the CLI (Files-on-Host
 mode), plus containers, builds and git-based deploys. It replaced Dockge.
 
 - URL (LAN): **http://192.168.1.70:9120**
-- URL (tailnet): `http://homelees.lungfish-pike.ts.net:9120`
+- URL (HTTPS, LAN + NetBird): `https://komodo.homelees.party`
 - Stack: `/opt/stacks/komodo/compose.yaml` (Core + Periphery + Mongo)
 - Config/secrets: `/opt/stacks/komodo/.env` (mode 0600). Self-registration is
   disabled (`KOMODO_DISABLE_USER_REGISTRATION=true`).
@@ -32,18 +32,17 @@ Imported stacks use `files_on_host = true`,
 The UI is **not exposed to the public Internet**:
 
 1. Core binds `0.0.0.0:9120`, so a `DOCKER-USER` rule drops tcp/9120 from any
-   source outside `192.168.1.0/24` (the tailnet address included, so remote
-   access goes through `tailscale serve`). All published Docker UI ports are
+   source outside `192.168.1.0/24` (the NetBird address included, so remote
+   access goes through Caddy). All published Docker UI ports are
    managed together by `docker-published-firewall.service`:
    ```bash
    sudo iptables -S DOCKER-USER | grep 9120
    systemctl status docker-published-firewall.service
    ```
-2. Remote access is via `tailscale serve` -> `127.0.0.1:9120` (listed in
-   `/usr/local/sbin/tailscale-remote-access.sh`).
+2. Remote access is via NetBird -> https://komodo.homelees.party (Caddy ->
+   `127.0.0.1:9120`).
 
-To allow a VPN subnet or add a new UI port, edit `LAN`/`PORTS` in
-`/usr/local/sbin/docker-published-firewall.sh` (and the tailscale script) and
+To add a new UI port, add it to `/opt/stacks/host/ports.txt` and
 run `sudo systemctl restart docker-published-firewall.service`.
 
 Komodo/Periphery mount `/var/run/docker.sock` (root-equivalent) and therefore

@@ -187,11 +187,6 @@ async def cmd_vpn(update: Update, ctx):
     met = read_json("metrics.json") or {}
     v = met.get("vpn", {})
     out = []
-    ts = v.get("tailscale")
-    if ts:
-        out.append(f"<b>Tailscale</b>: {ts.get('state')}")
-        for p in ts.get("peers", []):
-            out.append(f"  {'🟢' if p.get('online') else '⚪️'} {p.get('name')} ({p.get('os')})")
     if v.get("netbird"):
         out.append("<b>NetBird</b>:\n<code>" + v["netbird"][:1500] + "</code>")
     await reply(update, "\n".join(out) or "No VPN data.")

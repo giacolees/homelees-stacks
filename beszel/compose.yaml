@@ -8,7 +8,8 @@
 # Docs: https://beszel.dev/guide/getting-started
 #
 # Ports are bound to the LAN address + loopback only. Off-LAN access is via
-# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+# NetBird -> https://<name>.<domain> (Caddy uses the loopback port);
+# `docker-published-firewall.service` drops non-LAN traffic.
 name: beszel
 
 services:
@@ -22,7 +23,7 @@ services:
       - USER_EMAIL=${BESZEL_ADMIN_EMAIL}
       - USER_PASSWORD=${BESZEL_ADMIN_PASSWORD}
     ports:
-      # LAN + loopback (loopback is used by `tailscale serve`)
+      # LAN + loopback (loopback is Caddy's private path)
       - "${LAN_IP:?run host/site-env.sh}:8090:8090"
       - "127.0.0.1:8090:8090"
     volumes:

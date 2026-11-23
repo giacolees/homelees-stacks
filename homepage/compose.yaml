@@ -12,20 +12,17 @@ services:
       - glances
     environment:
       - TZ=Europe/Rome
-      # Change this to the LAN IP if you prefer LAN-IP links (works only at
-      # home). The MagicDNS name works from anywhere over Tailscale.
-      - HOMEPAGE_VAR_HOST=${TS_HOST}
       # Domain of the https://<service>.<domain> links in services.yaml.
       - HOMEPAGE_VAR_DOMAIN=${DOMAIN}
       # Komodo API key/secret for the Management widget. Kept out of git via .env.
       - HOMEPAGE_VAR_KOMODO_KEY=${KOMODO_API_KEY}
       - HOMEPAGE_VAR_KOMODO_SECRET=${KOMODO_API_SECRET}
       # Hosts allowed to load the dashboard (Next.js host check).
-      - HOMEPAGE_ALLOWED_HOSTS=${LAN_IP}:3000,${TS_HOST}:3000,${TS_IP}:3000,${NB_HOST}:3000,${NB_IP}:3000,home.${DOMAIN},localhost:3000,127.0.0.1:3000
+      - HOMEPAGE_ALLOWED_HOSTS=${LAN_IP}:3000,${NB_HOST}:3000,${NB_IP}:3000,home.${DOMAIN},localhost:3000,127.0.0.1:3000
     volumes:
       - ./config:/app/config
     ports:
-      # LAN + loopback only; remote access via `tailscale serve` -> tcp/3000
+      # LAN + loopback only; remote access via NetBird -> https://home.<domain>
       - "${LAN_IP:?run host/site-env.sh}:3000:3000"
       - "127.0.0.1:3000:3000"
 

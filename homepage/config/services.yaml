@@ -63,10 +63,6 @@
         icon: komodo.png
         href: https://komodo.{{HOMEPAGE_VAR_DOMAIN}}
         description: Containers & deploys
-    - Tailscale:
-        icon: tailscale.png
-        href: https://login.tailscale.com/admin/machines
-        description: Tailnet admin
     - NetBird:
         icon: netbird.png
         href: https://app.netbird.io/peers

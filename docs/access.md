@@ -2,98 +2,36 @@
 
 [← back to overview](../README.md)
 
-## Tailscale (remote access VPN)
+## NetBird (remote access VPN)
 
-Tailscale is installed as a system service (`tailscaled`) from the official
-Debian repo. It gives the server a private WireGuard-based address on your
-tailnet so you can reach it from anywhere without opening router ports.
+NetBird (`netbird.service`, official apt repo, upgraded by hand) is the only
+remote path; nothing is port-forwarded on the router. The server is
+`homelees.netbird.cloud` / `10.200.82.85` (network range `10.200.0.0/16`, set
+up with `--disable-dns`, no client/server routes). Tailscale was removed on
+2026-11-23 (see [history](history.md)).
 
-- CLI: `tailscale`
-- Daemon: `tailscaled.service` (enabled)
-- Status: `sudo tailscale status`
-
-### First-time login (manual, one-off)
-
-```bash
-sudo tailscale up --ssh --accept-dns=false
-```
-
-Open the printed URL and authenticate. `--ssh` enables Tailscale SSH (log in
-from any of your tailnet devices with your tailnet identity; the normal sshd
-on port 22 is unchanged). `--accept-dns=false` leaves the server's own DNS
-alone.
-
-### Remote access to the web UIs
-
-Cockpit stays bound to the LAN **and loopback only**, and Komodo's published
-port is firewalled to the LAN. `tailscale serve` forwards tailnet traffic to
-loopback, so nothing new is exposed on the LAN or the public Internet:
-
-| Service     | Tailnet URL |
-|-------------|-------------|
-| Cockpit     | `https://<node>.<tailnet>.ts.net:9090` (self-signed cert warning) |
-| Komodo      | `http://<node>.<tailnet>.ts.net:9120` |
-| Beszel      | `http://<node>.<tailnet>.ts.net:8090` |
-| Jellyfin    | `http://<node>.<tailnet>.ts.net:8096` |
-| Homepage    | `http://<node>.<tailnet>.ts.net:3000` |
-| Nextcloud   | `http://<node>.<tailnet>.ts.net:8082` |
-| Seerr       | `http://<node>.<tailnet>.ts.net:5055` |
-| Prowlarr    | `http://<node>.<tailnet>.ts.net:9696` |
-| Sonarr      | `http://<node>.<tailnet>.ts.net:8989` |
-| Radarr      | `http://<node>.<tailnet>.ts.net:7878` |
-| Bazarr      | `http://<node>.<tailnet>.ts.net:6767` |
-| qBittorrent | `http://<node>.<tailnet>.ts.net:8080` |
-| SABnzbd     | `http://<node>.<tailnet>.ts.net:8081` |
-| Ferdium     | `http://<node>.<tailnet>.ts.net:3333` |
-| Navidrome   | `http://<node>.<tailnet>.ts.net:4533` |
-| Octo-Fiesta | `http://<node>.<tailnet>.ts.net:5275` |
-| Calibre-Web (CWA) | `http://<node>.<tailnet>.ts.net:8083` |
-| Shelfmark   | `http://<node>.<tailnet>.ts.net:8084` |
-
-`tailscale-serve.service` waits for login and applies the config
-automatically. To re-apply manually:
+- **Over NetBird only HTTPS is open**: use `https://<service>.homelees.party`
+  (Caddy + Authelia, below). SSH (`ssh giacolees@homelees.netbird.cloud`) also
+  works, because the host firewall accepts everything on `wt0`, but
+  Docker-published `:port`s are LAN-only (`docker-published-firewall`).
+- **Direct port exceptions**: `netbird-remote-access.sh` runs a
+  `netbird-forward@<port>` socat unit (NetBird IP → `192.168.1.70:<port>`,
+  never loopback) only for ports in `host/netbird-direct.txt` (empty by
+  default; add one only for a native client that can't use the HTTPS name).
+- **Add a device**: install the NetBird client, sign in with the same account
+  (or a setup key from app.netbird.io → Setup Keys), then open
+  `https://home.homelees.party`.
+- **Health**: `homelees-healthcheck` alerts on Telegram if NetBird loses its
+  management connection; the bot's `/vpn` shows `netbird status`.
 
 ```bash
-sudo /usr/local/sbin/tailscale-remote-access.sh
-sudo tailscale serve status
+sudo netbird status          # -d for per-peer detail
+sudo /usr/local/sbin/netbird-remote-access.sh   # after editing netbird-direct.txt
+sudo apt-get update && sudo apt-get install --only-upgrade netbird   # drops NetBird SSH sessions briefly
 ```
 
-### Firewall interaction
-
-`/usr/local/sbin/cockpit-firewall.sh` now allows the `tailscale0` interface and
-loopback in addition to `192.168.1.0/24`; everything else to tcp/9090 is
-dropped (chain `COCKPIT-FW`). Docker-published ports (Komodo and the app UIs)
-are **not** reachable directly over Tailscale — only through `tailscale serve`.
-
-### Optional: reach the whole LAN
-
-To let tailnet devices reach other LAN hosts (not just this server), enable IP
-forwarding and advertise the subnet, then approve the route in the Tailscale
-admin console:
-
-```bash
-echo 'net.ipv4.ip_forward = 1' | sudo tee /etc/sysctl.d/99-tailscale.conf
-sudo sysctl --system
-sudo tailscale set --advertise-routes=192.168.1.0/24
-```
-
-### Lifecycle / updates
-
-```bash
-sudo tailscale status
-sudo tailscale netcheck
-sudo apt-get update && sudo apt-get install --only-upgrade tailscale
-sudo tailscale logout        # disconnect (also revoke in the admin console)
-```
-
-### Security notes
-
-- Tailscale traffic is end-to-end encrypted (WireGuard) and authenticated by
-  your identity provider.
-- The server's public SSH (port 22) is unchanged; consider restricting it to
-  the LAN/tailnet later if you want.
-- Tailscale is a third-party control plane (free tier). For full self-hosting,
-  the same role can be filled by WireGuard or Headscale.
+On the LAN every service also answers on `http://192.168.1.70:<port>`
+(ports in `host/ports.txt`) and Cockpit on `https://192.168.1.70:9090`.
 
 ## SSO & HTTPS (`/opt/stacks/sso`) — https://\<service\>.homelees.party
 
@@ -102,7 +40,7 @@ sudo tailscale logout        # disconnect (also revoke in the admin console)
   `netbird-remote-access.sh` forwards only ports listed in
   `host/netbird-direct.txt` (empty; add one only for a native client that can't
   use the HTTPS name). The landing page links to the HTTPS names when opened
-  over NetBird. LAN and Tailscale keep the direct `:port` URLs.
+  over NetBird. The LAN keeps the direct `:port` URLs.
 - **DNS**: Cloudflare zone `homelees.party`, one record `*.homelees.party A
   10.200.82.85` (the server's **NetBird** IP; DNS-only, not proxied). Names work
   on every NetBird device; nothing is reachable from the internet. Cloudflare API

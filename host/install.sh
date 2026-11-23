@@ -16,4 +16,4 @@ find . -type f | sed 's#^\.##' | while read -r f; do
     sudo install -D -m $mode -o root -g root ".$f" "$f"
 done
 sudo systemctl daemon-reload
-echo "Installed. Enable: nftables homelees-backup.timer homelees-backup-check.timer homelees-healthcheck.timer homelees-digest.timer docker-cleanup.timer docker-published-firewall tailscale-serve smartmontools unattended-upgrades"
+echo "Installed. Enable: nftables homelees-backup.timer homelees-backup-check.timer homelees-healthcheck.timer homelees-digest.timer docker-cleanup.timer docker-published-firewall smartmontools unattended-upgrades"

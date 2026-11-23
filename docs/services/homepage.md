@@ -10,12 +10,11 @@ the Komodo widget's API key/secret live in the gitignored
 `/opt/stacks/homepage/.env` and reach the container as `HOMEPAGE_VAR_KOMODO_*`.
 
 - URL (LAN): http://192.168.1.70:3000
-- URL (tailnet): http://homelees.lungfish-pike.ts.net:3000
+- URL (HTTPS, LAN + NetBird): https://home.homelees.party
 - Stack: `/opt/stacks/homepage/compose.yaml`
 
-All card links use `HOMEPAGE_VAR_HOST` (set in `compose.yaml`), currently the
-Tailscale MagicDNS name so they work from anywhere. To use LAN-IP links instead,
-set `HOMEPAGE_VAR_HOST=192.168.1.70` and restart the stack.
+All card links are `https://<service>.{{HOMEPAGE_VAR_DOMAIN}}` (`DOMAIN` from
+`site.env`), so they work on the LAN and over NetBird.
 
 Add/edit apps in `config/services.yaml`; layout/groups in `config/settings.yaml`.
 `config/bookmarks.yaml` is an explicit empty list (`[]`) to suppress Homepage's

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Drop forwarded traffic to Docker-published TCP ports from outside the LAN.
 # Docker published ports bypass the INPUT chain; DOCKER-USER is the supported
-# hook. Off-LAN access is via `tailscale serve` (loopback), which does not
+# hook. Off-LAN access is via NetBird -> Caddy (loopback), which does not
 # traverse this chain. Add new UI ports to PORTS and restart the service.
 set -eu
 

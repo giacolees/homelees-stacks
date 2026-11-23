@@ -1,6 +1,6 @@
 # Forward NetBird-IP:<port> -> 192.168.1.70:<port> (LAN IP, NOT loopback: loopback is
 # reserved for Caddy so apps can trust proxy headers from it only) (the NetBird equivalent of
-# `tailscale serve --tcp`). Instances are managed by netbird-remote-access.sh
+# a TCP port forward). Instances are managed by netbird-remote-access.sh
 # from /opt/stacks/host/ports.txt. The NetBird IP is read at start.
 [Unit]
 Description=NetBird forward tcp/%i -> 192.168.1.70:%i

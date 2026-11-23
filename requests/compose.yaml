@@ -10,7 +10,7 @@
 #   - Jellyfin        -> media_net         (external)
 #
 # Config lives in ./config/jellyseerr (gitignored). Ports are bound to the LAN
-# address + loopback only; remote access is via `tailscale serve`.
+# address + loopback only; remote access is via NetBird -> Caddy.
 # See /opt/stacks/docs/services/requests.md.
 name: requests
 

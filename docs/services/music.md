@@ -21,19 +21,19 @@ without remote path mappings.
 > **Retired: Octo (`winters27/octo`, port 5274).** Removed 2026-11-17. It was
 > shut down 2026-11-10 and superseded by Octo-Fiesta; its Last.fm scrobbling
 > role moved to Navidrome itself. Containers, `navidrome_net` peer, port 5274
-> (firewall + `tailscale serve`), landing-page row, Homepage entry, the
+> (firewall + VPN forward), landing-page row, Homepage entry, the
 > `/home/octo` data directory and the `/opt/stacks/octo` stack were all removed.
 > History is in git (`git log --all -- octo/`).
 
 ### Navidrome
 
 - URL (LAN): http://192.168.1.70:4533
-- URL (tailnet): `http://homelees.lungfish-pike.ts.net:4533`
+- URL (HTTPS, LAN + NetBird): `https://music.homelees.party`
 - Image: `deluan/navidrome:0.64.2` (pinned in `.env`)
 - App data, SQLite DB & transcode/image caches: `/home/navidrome/data` -> `/config` (SSD)
 - Music library (read-only mount): `/home/navidrome/music` -> `/data:ro` (SSD)
 - Port 4533 is bound to LAN + loopback and filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
+  `docker-published-firewall.service`; remote access is via NetBird -> Caddy (`https://<name>.homelees.party`)
 - **ListenBrainz scrobbling** (migrated from Last.fm on 2026-11-20):
   `ND_LISTENBRAINZ_ENABLED=true` is set in `compose.yaml` (Last.fm API keys
   removed). Each user enables *Settings → Personal → Scrobble to ListenBrainz*
@@ -63,7 +63,7 @@ from Deezer, tags it, and writes it into the library so Navidrome indexes it as
 a normal song. No radio/mixes/YouTube — it only fills library gaps.
 
 - URL (LAN): http://192.168.1.70:5275
-- URL (tailnet): `http://homelees.lungfish-pike.ts.net:5275`
+- URL (HTTPS, LAN + NetBird): `https://subsonic.homelees.party`
 - Image (pinned via `OCTO_FIESTA_TAG=b6a48b8` in `.env` — GHCR only publishes
   `latest`, `dev` and commit-SHA tags, so a SHA is the only way to pin):
   - `ghcr.io/v1ck3s/octo-fiesta:b6a48b8` (v0.11)
@@ -80,7 +80,7 @@ a normal song. No radio/mixes/YouTube — it only fills library gaps.
     and Navidrome imports them
 - Network: joins `navidrome_default` (`Subsonic__Url=http://navidrome:4533`)
 - Port 5275 is bound to LAN + loopback and filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
+  `docker-published-firewall.service`; remote access is via NetBird -> Caddy (`https://<name>.homelees.party`)
 - `SUBSONIC_ADMIN_*` is empty, so new downloads appear on Navidrome's
   `@every 5m` scan rather than immediately. Set the admin creds to make
   octo-fiesta trigger a scan right after each download.

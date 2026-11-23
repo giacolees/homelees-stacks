@@ -2,7 +2,7 @@
 #
 # Data lives on the 18TB disk (/mnt/media/Nextcloud/data); config, database and
 # Redis live on the SSD (/home/nextcloud). Secrets are in ./.env (gitignored).
-# LAN + loopback only; remote access via `tailscale serve` -> tcp/8082.
+# LAN + loopback only; remote access via NetBird -> https://cloud.<domain>.
 name: nextcloud
 
 services:
@@ -54,6 +54,6 @@ services:
       - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER}
       - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD}
       # Hostnames accepted by Nextcloud (ports are not part of this check)
-      - NEXTCLOUD_TRUSTED_DOMAINS=${LAN_IP} ${TS_HOST} ${TS_IP} ${NB_HOST} ${NB_IP} cloud.${DOMAIN} localhost 127.0.0.1
-      # Trust Docker/Tailscale forwarded traffic
+      - NEXTCLOUD_TRUSTED_DOMAINS=${LAN_IP} ${NB_HOST} ${NB_IP} cloud.${DOMAIN} localhost 127.0.0.1
+      # Trust Docker / Caddy (loopback) forwarded traffic
       - TRUSTED_PROXIES=172.16.0.0/12 127.0.0.1

@@ -19,7 +19,8 @@
 # the paths octo-fiesta reports match Navidrome's 1:1 with no remote mapping.
 #
 # Ports are bound to the LAN address + loopback only. Off-LAN access is via
-# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+# NetBird -> https://<name>.<domain> (Caddy uses the loopback port);
+# `docker-published-firewall.service` drops non-LAN traffic.
 name: octo-fiesta
 
 x-logging: &logging
@@ -35,7 +36,7 @@ services:
     restart: unless-stopped
     logging: *logging
     ports:
-      # LAN + loopback (loopback is used by `tailscale serve`)
+      # LAN + loopback (loopback is Caddy's private path)
       - "${LAN_IP:?run host/site-env.sh}:5275:8080"
       - "127.0.0.1:5275:8080"
     environment:

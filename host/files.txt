@@ -28,11 +28,9 @@
 /etc/systemd/system/docker-published-firewall.service.d/notify.conf
 /etc/systemd/system/nftables.service.d/notify.conf
 /etc/systemd/system/docker-published-firewall.service
-/etc/systemd/system/tailscale-serve.service
 /etc/systemd/system/jellyfin-transcode-cleanup.service
 /etc/systemd/system/jellyfin-transcode-cleanup.timer
 /usr/local/sbin/docker-published-firewall.sh
-/usr/local/sbin/tailscale-remote-access.sh
 /usr/local/sbin/homelees-backup.sh
 /usr/local/sbin/homelees-healthcheck
 /usr/local/sbin/homelees-digest
@@ -47,3 +45,6 @@
 /usr/local/sbin/homelees-image-updates
 /etc/systemd/system/homelees-image-updates.service
 /etc/systemd/system/homelees-image-updates.timer
+/etc/systemd/system/cockpit.socket.d/listen.conf
+/etc/systemd/system/cockpit-firewall.service
+/usr/local/sbin/cockpit-firewall.sh

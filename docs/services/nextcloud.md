@@ -7,7 +7,7 @@
 Personal cloud (files, photos, calendar) at `/opt/stacks/nextcloud`.
 
 - URL (LAN): http://192.168.1.70:8082
-- URL (tailnet): http://homelees.lungfish-pike.ts.net:8082
+- URL (HTTPS, LAN + NetBird): `https://cloud.homelees.party`
 - App/config: `/home/nextcloud/config` (SSD)
 - Database (MariaDB): `/home/nextcloud/db` (SSD)
 - Redis: `/home/nextcloud/redis` (SSD)

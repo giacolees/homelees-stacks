@@ -9,7 +9,8 @@
 # 1:1 without needing remote path mappings.
 #
 # Ports are bound to the LAN address + loopback only. Off-LAN access is via
-# `tailscale serve`; `docker-published-firewall.service` drops non-LAN traffic.
+# NetBird -> https://<name>.<domain> (Caddy uses the loopback port);
+# `docker-published-firewall.service` drops non-LAN traffic.
 name: navidrome
 
 services:
@@ -41,7 +42,7 @@ services:
       - ND_REVERSEPROXYWHITELIST=172.25.0.1/32
       - ND_REVERSEPROXYUSERHEADER=Remote-User
     ports:
-      # LAN + loopback (loopback is used by `tailscale serve`)
+      # LAN + loopback (loopback is Caddy's private path)
       - "${LAN_IP:?run host/site-env.sh}:4533:4533"
       - "127.0.0.1:4533:4533"
     volumes:

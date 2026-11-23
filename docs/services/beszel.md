@@ -8,7 +8,7 @@ Lightweight host + per-container monitoring (CPU, memory, disk, network) with
 history and alerts. Hub + agent, at `/opt/stacks/beszel`.
 
 - URL (LAN): http://192.168.1.70:8090
-- URL (tailnet): `http://<node>.<tailnet>.ts.net:8090`
+- URL (HTTPS, LAN + NetBird): `https://beszel.homelees.party`
 - Images: `henrygd/beszel:0.20.0` + `henrygd/beszel-agent:0.20.0` (pinned in `.env`)
 - Hub data: `/home/beszel/data` (SSD)
 - Agent data: `/home/beszel/agent_data` (SSD)
@@ -17,7 +17,7 @@ history and alerts. Hub + agent, at `/opt/stacks/beszel`.
 - Agent: `network_mode: host` and the Docker socket mounted read-only
   (root-equivalent — keep the hub LAN-only); connects to the hub over WebSocket
 - Port 8090 is bound to LAN + loopback and filtered by
-  `docker-published-firewall.service`; remote access is via `tailscale serve`
+  `docker-published-firewall.service`; remote access is via NetBird -> Caddy (`https://<name>.homelees.party`)
 
 The hub lists every container with its CPU/memory (per-container history is in
 `container_stats`). Homepage links to it from the Management group.

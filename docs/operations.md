@@ -74,9 +74,9 @@ Conventions:
 
 ## Site values (`site.env`)
 
-LAN IP, domain and the Tailscale/NetBird names/IPs live only in `/opt/stacks/site.env`
+LAN IP, domain and the NetBird name/IP live only in `/opt/stacks/site.env`
 (gitignored; template `site.env.example`). Compose files use `${LAN_IP}`, `${DOMAIN}`,
-`${TS_HOST}`, `${TS_IP}`, `${NB_HOST}`, `${NB_IP}`; the Caddyfile `{$DOMAIN}`, Authelia
+`${NB_HOST}`, `${NB_IP}`; the Caddyfile `{$DOMAIN}`, Authelia
 `{{ env "DOMAIN" }}` and Homepage `{{HOMEPAGE_VAR_DOMAIN}}`. `host/site-env.sh` copies
 `site.env` into a managed block at the end of every `<stack>/.env` so both the CLI and
 Komodo interpolate them. After editing `site.env` (or adding a stack):
@@ -244,7 +244,7 @@ Settings → Deploy keys. A **pre-commit hook** (`.git/hooks/pre-commit`, not
 versioned) refuses `.env`/key/`users.yml` files and runs gitleaks (offline,
 pinned container) on staged changes; full-history scan:
 `sudo docker run --rm --network none -v /opt/stacks:/repo:ro zricethezav/gitleaks:v8.21.2 git /repo --redact`.
-Keep the repo private: it maps IPs, domain, tailnet and firewall rules.
+Keep the repo private: it maps IPs, domain, VPN and firewall rules.
 
 `/opt/stacks` is a git repo. `.gitignore` excludes `.env`, key material, and
 common state directories. **Never commit credentials, tokens, `.env` files,
@@ -264,9 +264,10 @@ git commit -m "add <app> stack"
 
 - `ports.txt` — **single source of truth** for web-UI ports. Both
   `/usr/local/sbin/docker-published-firewall.sh` (DOCKER-USER, `docker` kind)
-  and `/usr/local/sbin/tailscale-remote-access.sh` (all kinds) read it. To add or
+  and `/usr/local/sbin/netbird-remote-access.sh` (only ports also in
+  `netbird-direct.txt`) read it. To add or
   remove a port: edit `ports.txt`, then
-  `sudo systemctl restart docker-published-firewall.service && sudo /usr/local/sbin/tailscale-remote-access.sh`.
+  `sudo systemctl restart docker-published-firewall.service && sudo /usr/local/sbin/netbird-remote-access.sh`.
 - `files.txt` + `files/` — snapshot of every host config file we manage
   (sshd drop-in, nftables, daemon.json, smartd, apt/unattended, sysctl, systemd
   units/timers, `/usr/local/sbin` scripts, landing page). After changing any of

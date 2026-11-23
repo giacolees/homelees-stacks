@@ -64,7 +64,7 @@ Everything is reachable only from home or over the VPN. Nothing is exposed to th
 <tr><th colspan="4" align="left">🧱 Platform</th></tr>
 <tr>
 <td align="center"><img src="docs/assets/icons/caddy.png" width="40"> <img src="docs/assets/icons/authelia.png" width="40"><br><b><a href="docs/access.md#sso--https-optstackssso--httpsservicehomeleesparty">Caddy · Authelia</a></b><br><sub>HTTPS + passkey SSO</sub></td>
-<td align="center"><img src="docs/assets/icons/netbird.png" width="40"> <img src="docs/assets/icons/tailscale.png" width="40"><br><b><a href="docs/access.md">NetBird · Tailscale</a></b><br><sub>Private remote access</sub></td>
+<td align="center"><img src="docs/assets/icons/netbird.png" width="40"><br><b><a href="docs/access.md">NetBird</a></b><br><sub>Private remote access</sub></td>
 <td align="center"><img src="docs/assets/icons/restic.png" width="48"><br><b><a href="docs/monitoring.md#backups-restic">restic</a></b><br><sub>Nightly backups</sub></td>
 <td align="center"><img src="docs/assets/icons/telegram.png" width="40"> <img src="docs/assets/icons/ferdium.png" width="40"><br><b><a href="docs/monitoring.md#telegram-bot-optstackstelegram-bot">Telegram bot</a> · <a href="docs/services/ferdium.md">Ferdium</a></b><br><sub>Alerts · app sync 👤</sub></td>
 </tr>
@@ -78,7 +78,6 @@ flowchart LR
         direction TB
         lan["🏠 Home LAN"]
         nb["📱 NetBird"]
-        ts["💻 Tailscale"]
     end
 
     subgraph host["homelees · Debian 12"]
@@ -105,7 +104,6 @@ flowchart LR
 
     lan -- "HTTPS or :port" --> caddy
     nb -- "HTTPS only" --> caddy
-    ts -- ":port" --> apps
     lan -. ":port" .-> apps
     caddy -- "forward-auth" --> authelia
     caddy --> apps
@@ -137,7 +135,7 @@ Docker always needs `sudo`; the admin user is deliberately not in the `docker` g
 | | Guide | What's inside |
 | :-: | :--- | :--- |
 | 🧭 | [Operations runbook](docs/operations.md) | layout, permissions, daily ops, logs, updates, rollback, git |
-| 🔐 | [Remote access & SSO](docs/access.md) | Tailscale, NetBird, Caddy, Authelia, OIDC apps |
+| 🔐 | [Remote access & SSO](docs/access.md) | NetBird, Caddy, Authelia, OIDC apps |
 | 🛡️ | [Host security](docs/security.md) | SSH, firewall (nftables), unattended upgrades |
 | 📈 | [Monitoring, alerts & backups](docs/monitoring.md) | health check, image updates, Telegram bot, restic |
 | 💾 | [Storage](docs/storage.md) | the 18 TB media disk and its folders |

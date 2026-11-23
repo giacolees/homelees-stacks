@@ -9,7 +9,7 @@
 # Secrets:            ./.env  (gitignored, e.g. OPENAI_API_KEY)
 #
 # Ports are bound to the LAN address and loopback only. Remote (off-LAN) access
-# is provided by `tailscale serve` -> tcp/8096 -> 127.0.0.1:8096. DLNA stays
+# is NetBird -> https://jellyfin.<domain> (Caddy -> 127.0.0.1:8096). DLNA stays
 # LAN-only. Do NOT change these to 0.0.0.0 without also reviewing the firewall.
 services:
   jellyfin:
@@ -32,7 +32,7 @@ services:
       # 18TB media disk, stably mounted at /mnt/media via /etc/fstab (UUID)
       - /mnt/media:/media
     ports:
-      # Web UI (LAN + loopback for tailscale serve)
+      # Web UI (LAN + loopback for Caddy)
       - "${LAN_IP:?run host/site-env.sh}:8096:8096"
       - "127.0.0.1:8096:8096"
       # DLNA discovery (LAN only)

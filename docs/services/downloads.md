@@ -22,15 +22,15 @@ The "click to request, and it lands in the right folder" flow:
 - FlareSolverr (Cloudflare / DDoS-GUARD bypass for Prowlarr) has **no published
   port**; Prowlarr reaches it internally at `http://flaresolverr:8191`.
 
-| App         | Purpose                   | Host port | Tailnet URL |
+| App         | Purpose                   | Host port | HTTPS name |
 |-------------|---------------------------|-----------|-------------|
-| Prowlarr    | Indexer manager           | 9696      | `...:9696` |
-| Sonarr      | TV automation             | 8989      | `...:8989` |
-| Radarr      | Movies automation         | 7878      | `...:7878` |
-| Bazarr      | Subtitles                 | 6767      | `...:6767` |
-| qBittorrent | Torrents (behind Gluetun) | 8080      | `...:8080` |
-| SABnzbd     | Usenet                    | 8081      | `...:8081` |
-| Shelfmark   | Ebook search & download (behind Gluetun) | 8084 | `...:8084` |
+| Prowlarr    | Indexer manager           | 9696      | `prowlarr` |
+| Sonarr      | TV automation             | 8989      | `sonarr` |
+| Radarr      | Movies automation         | 7878      | `radarr` |
+| Bazarr      | Subtitles                 | 6767      | `bazarr` |
+| qBittorrent | Torrents (behind Gluetun) | 8080      | `torrent` |
+| SABnzbd     | Usenet                    | 8081      | `sab` |
+| Shelfmark   | Ebook search & download (behind Gluetun) | 8084 | `shelfmark` |
 
 ### VPN (Gluetun) — required
 
