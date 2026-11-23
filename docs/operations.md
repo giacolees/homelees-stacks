@@ -72,6 +72,20 @@ Conventions:
   (e.g. `/DATA/<app>`), or ignore them in `.gitignore`.
 - Compose files should be self-contained; put secrets in `.env` (ignored).
 
+## Site values (`site.env`)
+
+LAN IP, domain and the Tailscale/NetBird names/IPs live only in `/opt/stacks/site.env`
+(gitignored; template `site.env.example`). Compose files use `${LAN_IP}`, `${DOMAIN}`,
+`${TS_HOST}`, `${TS_IP}`, `${NB_HOST}`, `${NB_IP}`; the Caddyfile `{$DOMAIN}`, Authelia
+`{{ env "DOMAIN" }}` and Homepage `{{HOMEPAGE_VAR_DOMAIN}}`. `host/site-env.sh` copies
+`site.env` into a managed block at the end of every `<stack>/.env` so both the CLI and
+Komodo interpolate them. After editing `site.env` (or adding a stack):
+
+```bash
+/opt/stacks/host/site-env.sh
+cd /opt/stacks/<stack> && sudo docker compose up -d   # for each affected stack
+```
+
 ## Ownership & permissions
 
 | Path                     | Owner          | Mode  | Notes                                    |

@@ -1,4 +1,4 @@
-# Authelia — login portal for *.homelees.party (https://auth.homelees.party).
+# Authelia — login portal for *.DOMAIN (https://auth.DOMAIN); DOMAIN comes from site.env.
 # Secrets are injected via *_FILE env vars from /home/sso/authelia/secrets.
 theme: auto
 server:
@@ -6,7 +6,7 @@ server:
 log:
   level: info
 totp:
-  issuer: homelees.party
+  issuer: {{ env "DOMAIN" }}
 webauthn:
   disable: false
   enable_passkey_login: true
@@ -28,27 +28,27 @@ access_control:
   default_policy: deny
   rules:
     # API endpoints authenticate with the app's own API key (mobile apps, *arr <-> *arr)
-    - domain: ['sonarr.homelees.party', 'radarr.homelees.party', 'prowlarr.homelees.party', 'bazarr.homelees.party', 'sab.homelees.party']
+    - domain: ['sonarr.{{ env "DOMAIN" }}', 'radarr.{{ env "DOMAIN" }}', 'prowlarr.{{ env "DOMAIN" }}', 'bazarr.{{ env "DOMAIN" }}', 'sab.{{ env "DOMAIN" }}']
       resources: ['^/api([/?].*)?$', '^/feed([/?].*)?$', '^/[0-9]+/api([/?].*)?$', '^/[0-9]+/download([/?].*)?$']
       policy: bypass
-    - domain: torrent.homelees.party
+    - domain: torrent.{{ env "DOMAIN" }}
       resources: ['^/api/v2/.*$']
       policy: bypass
     # Navidrome: Subsonic API (apps, own token auth), public share links, health
-    - domain: music.homelees.party
+    - domain: music.{{ env "DOMAIN" }}
       resources: ['^/rest/.*$', '^/share/.*$', '^/ping$']
       policy: bypass
     # Calibre-Web-Automated: OPDS catalog + KOReader sync for e-readers (CWA basic auth)
-    - domain: books.homelees.party
+    - domain: books.{{ env "DOMAIN" }}
       resources: ['^/opds([/?].*)?$', '^/kosync([/?].*)?$']
       policy: bypass
-    - domain: '*.homelees.party'
+    - domain: '*.{{ env "DOMAIN" }}'
       policy: two_factor
 session:
   cookies:
-    - domain: homelees.party
-      authelia_url: https://auth.homelees.party
-      default_redirection_url: https://home.homelees.party
+    - domain: {{ env "DOMAIN" }}
+      authelia_url: https://auth.{{ env "DOMAIN" }}
+      default_redirection_url: https://home.{{ env "DOMAIN" }}
       expiration: 12h
       inactivity: 4h
       remember_me: 1M
@@ -86,7 +86,7 @@ identity_providers:
         claims_policy: homelees
         require_pkce: true
         pkce_challenge_method: S256
-        redirect_uris: ['https://cloud.homelees.party/apps/user_oidc/code']
+        redirect_uris: ['https://cloud.{{ env "DOMAIN" }}/apps/user_oidc/code']
         scopes: ['openid', 'profile', 'email', 'groups']
         response_types: ['code']
         grant_types: ['authorization_code']
@@ -99,7 +99,7 @@ identity_providers:
         public: false
         authorization_policy: two_factor
         claims_policy: homelees
-        redirect_uris: ['https://komodo.homelees.party/auth/oidc/callback']
+        redirect_uris: ['https://komodo.{{ env "DOMAIN" }}/auth/oidc/callback']
         scopes: ['openid', 'profile', 'email']
         response_types: ['code']
         grant_types: ['authorization_code']
@@ -111,7 +111,7 @@ identity_providers:
         public: false
         authorization_policy: two_factor
         claims_policy: homelees
-        redirect_uris: ['https://beszel.homelees.party/api/oauth2-redirect']
+        redirect_uris: ['https://beszel.{{ env "DOMAIN" }}/api/oauth2-redirect']
         scopes: ['openid', 'profile', 'email']
         response_types: ['code']
         grant_types: ['authorization_code']

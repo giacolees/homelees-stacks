@@ -25,7 +25,7 @@ services:
       - TZ=${TZ}
     ports:
       # LAN + loopback (loopback is used by `tailscale serve`)
-      - "192.168.1.70:3333:3333"
+      - "${LAN_IP:?run host/site-env.sh}:3333:3333"
       - "127.0.0.1:3333:3333"
     volumes:
       - /home/ferdium/data:/data

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+site.env              # site values (LAN IP, domain, VPN names) — template: site.env.example
 *.env
 *.secret
 *.key

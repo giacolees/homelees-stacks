@@ -1,4 +1,4 @@
-# Caddy + Cloudflare DNS plugin (DNS-01 wildcard cert for *.homelees.party).
+# Caddy + Cloudflare DNS plugin (DNS-01 wildcard cert for *.<domain>).
 FROM caddy:2.11.4-builder-alpine AS builder
 RUN xcaddy build v2.11.4 --with github.com/caddy-dns/cloudflare@v0.2.4
 

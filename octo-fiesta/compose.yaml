@@ -36,7 +36,7 @@ services:
     logging: *logging
     ports:
       # LAN + loopback (loopback is used by `tailscale serve`)
-      - "192.168.1.70:5275:8080"
+      - "${LAN_IP:?run host/site-env.sh}:5275:8080"
       - "127.0.0.1:5275:8080"
     environment:
       TZ: ${TZ:-Europe/Rome}

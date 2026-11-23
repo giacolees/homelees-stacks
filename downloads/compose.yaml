@@ -37,10 +37,10 @@ services:
     ports:
       # qBittorrent Web UI is published here because qBittorrent shares
       # Gluetun's network namespace.
-      - "192.168.1.70:8080:8080"
+      - "${LAN_IP:?run host/site-env.sh}:8080:8080"
       - "127.0.0.1:8080:8080"
       # Shelfmark Web UI (also in Gluetun's namespace)
-      - "192.168.1.70:8084:8084"
+      - "${LAN_IP:?run host/site-env.sh}:8084:8084"
       - "127.0.0.1:8084:8084"
     environment:
       - TZ=Europe/Rome
@@ -105,7 +105,7 @@ services:
       - AUTH_METHOD=cwa
       - CWA_DB_PATH=/auth/app.db
       - INGEST_DIR=/books
-      - CALIBRE_WEB_URL=http://192.168.1.70:8083
+      - CALIBRE_WEB_URL=http://${LAN_IP}:8083
       - LIBRARY_CHECK_CALIBRE_ENABLED=true
       - CALIBRE_LIBRARY_DB_PATH=/calibre-library/metadata.db
       # E-reader formats first; PDF allowed for textbooks/coursebooks (read on tablet/PC)
@@ -131,7 +131,7 @@ services:
     container_name: sabnzbd
     <<: *arr
     ports:
-      - "192.168.1.70:8081:8080"
+      - "${LAN_IP:?run host/site-env.sh}:8081:8080"
       - "127.0.0.1:8081:8080"
     volumes:
       - ./config/sabnzbd:/config
@@ -143,7 +143,7 @@ services:
     container_name: prowlarr
     <<: *arr
     ports:
-      - "192.168.1.70:9696:9696"
+      - "${LAN_IP:?run host/site-env.sh}:9696:9696"
       - "127.0.0.1:9696:9696"
     volumes:
       - ./config/prowlarr:/config
@@ -179,7 +179,7 @@ services:
     container_name: sonarr
     <<: *arr
     ports:
-      - "192.168.1.70:8989:8989"
+      - "${LAN_IP:?run host/site-env.sh}:8989:8989"
       - "127.0.0.1:8989:8989"
     volumes:
       - ./config/sonarr:/config
@@ -191,7 +191,7 @@ services:
     container_name: radarr
     <<: *arr
     ports:
-      - "192.168.1.70:7878:7878"
+      - "${LAN_IP:?run host/site-env.sh}:7878:7878"
       - "127.0.0.1:7878:7878"
     volumes:
       - ./config/radarr:/config
@@ -203,7 +203,7 @@ services:
     container_name: bazarr
     <<: *arr
     ports:
-      - "192.168.1.70:6767:6767"
+      - "${LAN_IP:?run host/site-env.sh}:6767:6767"
       - "127.0.0.1:6767:6767"
     volumes:
       - ./config/bazarr:/config

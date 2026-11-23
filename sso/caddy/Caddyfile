@@ -1,8 +1,8 @@
-# homelees reverse proxy: https://<service>.homelees.party
-# DNS: *.homelees.party -> 10.200.82.85 (NetBird, private). Wildcard cert via
+# homelees reverse proxy: https://<service>.{$DOMAIN}
+# DNS: *.{$DOMAIN} -> {$NB_IP} (NetBird, private). Values come from site.env. Wildcard cert via
 # Cloudflare DNS-01, so no inbound port 80/443 from the internet is needed.
 {
-	default_bind 192.168.1.70 10.200.82.85 127.0.0.1
+	default_bind {$LAN_IP} {$NB_IP} 127.0.0.1
 	auto_https disable_redirects        # :80 belongs to Apache (landing page)
 	admin off
 }
@@ -16,7 +16,7 @@
 	}
 }
 
-*.homelees.party {
+*.{$DOMAIN} {
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
 		resolvers 1.1.1.1
@@ -29,53 +29,53 @@
 	request_header -Remote-Email
 	request_header -Remote-Name
 
-	@auth host auth.homelees.party
+	@auth host auth.{$DOMAIN}
 	handle @auth {
 		reverse_proxy 127.0.0.1:9091
 	}
 
 	# ---- behind SSO (browser-only admin UIs) --------------------------------
-	@home host home.homelees.party
+	@home host home.{$DOMAIN}
 	handle @home {
 		import sso
 		reverse_proxy 127.0.0.1:3000
 	}
-	@sonarr host sonarr.homelees.party
+	@sonarr host sonarr.{$DOMAIN}
 	handle @sonarr {
 		import sso
 		reverse_proxy 127.0.0.1:8989
 	}
-	@radarr host radarr.homelees.party
+	@radarr host radarr.{$DOMAIN}
 	handle @radarr {
 		import sso
 		reverse_proxy 127.0.0.1:7878
 	}
-	@shelfmark host shelfmark.homelees.party
+	@shelfmark host shelfmark.{$DOMAIN}
 	handle @shelfmark {
 		import sso                              # + Shelfmark login (CWA accounts)
 		reverse_proxy 127.0.0.1:8084
 	}
-	@books host books.homelees.party
+	@books host books.{$DOMAIN}
 	handle @books {
 		import sso                              # /opds, /kosync bypassed (CWA basic auth)
 		reverse_proxy 127.0.0.1:8083
 	}
-	@prowlarr host prowlarr.homelees.party
+	@prowlarr host prowlarr.{$DOMAIN}
 	handle @prowlarr {
 		import sso
 		reverse_proxy 127.0.0.1:9696
 	}
-	@bazarr host bazarr.homelees.party
+	@bazarr host bazarr.{$DOMAIN}
 	handle @bazarr {
 		import sso
 		reverse_proxy 127.0.0.1:6767
 	}
-	@sab host sab.homelees.party
+	@sab host sab.{$DOMAIN}
 	handle @sab {
 		import sso
 		reverse_proxy 127.0.0.1:8081
 	}
-	@torrent host torrent.homelees.party
+	@torrent host torrent.{$DOMAIN}
 	handle @torrent {
 		import sso
 		reverse_proxy 127.0.0.1:8080 {
@@ -84,7 +84,7 @@
 			header_up -Referer
 		}
 	}
-	@cockpit host cockpit.homelees.party
+	@cockpit host cockpit.{$DOMAIN}
 	handle @cockpit {
 		import sso
 		reverse_proxy https://127.0.0.1:9090 {
@@ -95,38 +95,38 @@
 	}
 
 	# ---- own login / native apps (SSO via OIDC in the next stage) ------------
-	@jellyfin host jellyfin.homelees.party
+	@jellyfin host jellyfin.{$DOMAIN}
 	handle @jellyfin {
 		reverse_proxy 127.0.0.1:8096
 	}
-	@cloud host cloud.homelees.party
+	@cloud host cloud.{$DOMAIN}
 	handle @cloud {
 		redir /.well-known/carddav /remote.php/dav 301
 		redir /.well-known/caldav /remote.php/dav 301
 		reverse_proxy 127.0.0.1:8082
 	}
-	@music host music.homelees.party
+	@music host music.{$DOMAIN}
 	handle @music {
 		import sso                              # Navidrome trusts Remote-User from Caddy
 		reverse_proxy 127.0.0.1:4533
 	}
-	@subsonic host subsonic.homelees.party
+	@subsonic host subsonic.{$DOMAIN}
 	handle @subsonic {
 		reverse_proxy 127.0.0.1:5275           # octo-fiesta (Subsonic apps)
 	}
-	@requests host requests.homelees.party
+	@requests host requests.{$DOMAIN}
 	handle @requests {
 		reverse_proxy 127.0.0.1:5055
 	}
-	@komodo host komodo.homelees.party
+	@komodo host komodo.{$DOMAIN}
 	handle @komodo {
 		reverse_proxy 127.0.0.1:9120
 	}
-	@beszel host beszel.homelees.party
+	@beszel host beszel.{$DOMAIN}
 	handle @beszel {
 		reverse_proxy 127.0.0.1:8090
 	}
-	@ferdium host ferdium.homelees.party
+	@ferdium host ferdium.{$DOMAIN}
 	handle @ferdium {
 		reverse_proxy 127.0.0.1:3333
 	}

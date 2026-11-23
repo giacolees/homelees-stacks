@@ -69,7 +69,7 @@ All alerts go to one Telegram chat through `/usr/local/sbin/tg-notify "msg"`
 | `homelees-healthcheck.timer` → `/usr/local/sbin/homelees-healthcheck` | `/mnt/media` mounted, disk usage (85%, 90% for media//tmp), kernel storage I/O errors, ext4 error counters, failed units, unhealthy/stopped/restart-looping containers, backup age/status, low memory, VPN up. Alerts only on **change** (new problem / resolved). State: `/var/lib/homelees-status/health.json` | every 10 min |
 | `smartmontools` (`/etc/smartd.conf`) → `smartd-notify` | NVMe SMART + temperature, self-tests (short Sun 03:00, long 1st 04:00). The Seagate One Touch Hub USB enclosure does **not** pass SMART through, so the HDD is covered by the kernel-error/ext4 checks above instead. | continuous |
 | `homelees-backup` | failure, or offsite not configured | nightly |
-| `homelees-image-updates.timer` → `/usr/local/sbin/homelees-image-updates` | newer version of every pinned image (watch list `diun/images.yml`; only tag lists are fetched, no manifest pulls). **One** Telegram message, only for versions not reported before: `image (stack): current → newest`, `⚠️ MAJOR` on a major-version jump. Result `/var/lib/homelees-status/images.json` → 09:00 digest line and bot `/updates`. Re-send the full list: `sudo homelees-image-updates --notify-all` | daily 08:45 |
+| `homelees-image-updates.timer` → `/usr/local/sbin/homelees-image-updates` | newer version of every pinned image (watch list `host/image-watch.yml`; only tag lists are fetched, no manifest pulls). **One** Telegram message, only for versions not reported before: `image (stack): current → newest`, `⚠️ MAJOR` on a major-version jump. Result `/var/lib/homelees-status/images.json` → 09:00 digest line and bot `/updates`. Re-send the full list: `sudo homelees-image-updates --notify-all` | daily 08:45 |
 | `docker-cleanup.timer` | prunes images unused for >7 days + build cache >2 GB | monthly |
 
 `vm.swappiness=10` (`/etc/sysctl.d/90-homelees.conf`). The 1 GB swap fills
@@ -82,14 +82,14 @@ Every image is pinned to an explicit version (or digest for gluetun).
 `homelees-image-updates` reports new versions (Telegram / bot `/updates`). The
 Diun container was retired on 2026-11-23: with `watch_repo` it alerted on every
 *old* tag of each repo (≈2000 messages/day) and hit Docker Hub rate limits;
-`diun/images.yml` stays as the watch list (`name` = the pinned tag, `include_tags`
+its old `images.yml` lives on as `host/image-watch.yml`, the watch list (`name` = the pinned tag, `include_tags`
 = regex of the release line). To upgrade:
 
 ```bash
 cd /opt/stacks/<stack>
 # edit the tag in compose.yaml (or the *_VERSION var in .env)
 sudo docker compose pull && sudo docker compose up -d && sudo docker compose ps
-# also bump the matching entry in /opt/stacks/diun/images.yml, then:
+# also bump the matching entry in /opt/stacks/host/image-watch.yml, then:
 cd /opt/stacks && git commit -am "<stack>: bump <image> to <tag>"
 ```
 Rollback = restore the previous tag and `up -d` again (old images are kept 7 days).
@@ -113,8 +113,7 @@ admin chat (`TG_CHAT_ID`; others are ignored and logged).
   comes from `/var/lib/homelees-status/*.json` (read-only mount), written by
   `homelees-healthcheck` and `homelees-backup`. Container is read-only, non-root,
   all capabilities dropped, 128 MB limit. No published ports (long polling).
-- Secrets: `.env` here and `/etc/homelees/telegram.env` (both 0600; `diun/.env`
-  is unused since Diun was retired). **Rotate the token**: `/revoke` in
+- Secrets: `.env` here and `/etc/homelees/telegram.env` (both 0600). **Rotate the token**: `/revoke` in
   @BotFather, then update both files and `sudo docker compose up -d` here.
 
 ```bash

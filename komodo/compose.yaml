@@ -30,22 +30,22 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${KOMODO_DATABASE_PASSWORD}
   
   core:
-    image: ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_IMAGE_TAG:-2}
+    image: ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_IMAGE_TAG:-2.3.3}
     init: true
     restart: unless-stopped
     depends_on:
       - mongo
     ports:
       # Bind loopback + LAN explicitly instead of 0.0.0.0.
-      # 0.0.0.0:9120 collides with Tailscale Serve on 100.87.187.75:9120.
+      # 0.0.0.0:9120 collides with Tailscale Serve on <tailscale-ip>:9120.
       - 127.0.0.1:9120:9120
-      - 192.168.1.70:9120:9120
+      - ${LAN_IP:?run host/site-env.sh}:9120:9120
     env_file: ./.env
     # OIDC discovery runs only at startup; the router's DNS (192.168.1.254) sometimes
     # times out, which leaves "OIDC Provider not available" until the next restart.
     # Pin Authelia's name to Caddy's NetBird IP (static) so login never depends on it.
     extra_hosts:
-      - "auth.homelees.party:10.200.82.85"
+      - "auth.${DOMAIN}:${NB_IP}"
     environment:
       KOMODO_DATABASE_ADDRESS: mongo:27017
     volumes:
@@ -64,7 +64,7 @@ services:
   ## or deploy the Periphery binary with systemd using 
   ## https://github.com/moghtech/komodo/tree/main/scripts
   periphery:
-    image: ghcr.io/moghtech/komodo-periphery:${COMPOSE_KOMODO_IMAGE_TAG:-2}
+    image: ghcr.io/moghtech/komodo-periphery:${COMPOSE_KOMODO_IMAGE_TAG:-2.3.3}
     init: true
     restart: unless-stopped
     depends_on:

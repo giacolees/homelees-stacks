@@ -1,67 +1,67 @@
-# Links use the HTTPS names https://<service>.homelees.party (Caddy + Authelia SSO,
+# Links use the HTTPS names https://<service>.<domain> (Caddy + Authelia SSO,
 # /opt/stacks/sso). Old http://<host>:<port> URLs still work as a fallback.
 # Server status is provided by the Glances info widget (widgets.yaml).
 
 - Sync:
     - Ferdium:
         icon: ferdium.png
-        href: https://ferdium.homelees.party
+        href: https://ferdium.{{HOMEPAGE_VAR_DOMAIN}}
         description: Client sync & workspaces
 
 - Files:
     - Nextcloud:
         icon: nextcloud.png
-        href: https://cloud.homelees.party
+        href: https://cloud.{{HOMEPAGE_VAR_DOMAIN}}
         description: Files, photos, calendar
 
 - Photos:
     - Memories:
         icon: memories.png
-        href: https://cloud.homelees.party/apps/memories
+        href: https://cloud.{{HOMEPAGE_VAR_DOMAIN}}/apps/memories
         description: Photos (Nextcloud)
 
 - Music:
     - Navidrome:
         icon: navidrome.png
-        href: https://music.homelees.party
+        href: https://music.{{HOMEPAGE_VAR_DOMAIN}}
         description: Music streaming (Subsonic)
     - Octo-Fiesta:
         icon: mdi-music-note-plus
-        href: https://subsonic.homelees.party
+        href: https://subsonic.{{HOMEPAGE_VAR_DOMAIN}}
         description: Deezer → Navidrome library filler
 
 - Media:
     - Jellyfin:
         icon: jellyfin.png
-        href: https://jellyfin.homelees.party
+        href: https://jellyfin.{{HOMEPAGE_VAR_DOMAIN}}
         description: Movies, TV, music, books
     - Seerr:
         icon: seerr.png
-        href: https://requests.homelees.party
+        href: https://requests.{{HOMEPAGE_VAR_DOMAIN}}
         description: Request movies & shows
     - Bazarr:
         icon: bazarr.png
-        href: https://bazarr.homelees.party
+        href: https://bazarr.{{HOMEPAGE_VAR_DOMAIN}}
         description: Subtitles
 
 - Reading:
     - Calibre-Web:
         icon: calibre-web.png
-        href: https://books.homelees.party
+        href: https://books.{{HOMEPAGE_VAR_DOMAIN}}
         description: Ebook library, OPDS & KOReader sync
     - Shelfmark:
         icon: shelfmark.png
-        href: https://shelfmark.homelees.party
+        href: https://shelfmark.{{HOMEPAGE_VAR_DOMAIN}}
         description: Ebook search & downloads (VPN)
 
 - Management:
     - Cockpit:
         icon: cockpit.png
-        href: https://cockpit.homelees.party
+        href: https://cockpit.{{HOMEPAGE_VAR_DOMAIN}}
         description: Server management
     - Komodo:
         icon: komodo.png
-        href: https://komodo.homelees.party
+        href: https://komodo.{{HOMEPAGE_VAR_DOMAIN}}
         description: Containers & deploys
     - Tailscale:
         icon: tailscale.png
@@ -73,27 +73,27 @@
         description: NetBird peers & access
     - Beszel:
         icon: beszel.png
-        href: https://beszel.homelees.party
+        href: https://beszel.{{HOMEPAGE_VAR_DOMAIN}}
         description: Host & container stats
 
 - Downloads:
     - Sonarr:
         icon: sonarr.png
-        href: https://sonarr.homelees.party
+        href: https://sonarr.{{HOMEPAGE_VAR_DOMAIN}}
         description: TV automation
     - Radarr:
         icon: radarr.png
-        href: https://radarr.homelees.party
+        href: https://radarr.{{HOMEPAGE_VAR_DOMAIN}}
         description: Movie automation
     - Prowlarr:
         icon: prowlarr.png
-        href: https://prowlarr.homelees.party
+        href: https://prowlarr.{{HOMEPAGE_VAR_DOMAIN}}
         description: Indexers
     - qBittorrent:
         icon: qbittorrent.png
-        href: https://torrent.homelees.party
+        href: https://torrent.{{HOMEPAGE_VAR_DOMAIN}}
         description: Torrents (VPN)
     - SABnzbd:
         icon: sabnzbd.png
-        href: https://sab.homelees.party
+        href: https://sab.{{HOMEPAGE_VAR_DOMAIN}}
         description: Usenet

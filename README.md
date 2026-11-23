@@ -150,8 +150,9 @@ Docker always needs `sudo`; the admin user is deliberately not in the `docker` g
 ```text
 /opt/stacks
 ├── <app>/compose.yaml     one stack per folder (+ .env.example; real .env is local only)
-├── host/                  host config tracked in git: ports.txt, systemd units, scripts
-├── diun/images.yml        watch list for the daily image-update check
+├── host/                  host config tracked in git: ports.txt, systemd units, scripts,
+│                          image-watch.yml (daily image-update check), site-env.sh
+├── site.env.example       site values (LAN IP, domain, VPN names); real site.env is local only
 ├── docs/                  everything that used to be in this README
 └── README.md              you are here
 ```

@@ -221,7 +221,7 @@ async def cmd_updates(update: Update, ctx):
         if img.get("errors"):
             txt += f"⚠️ {len(img['errors'])} image(s) could not be checked\n"
         if ups:
-            txt += "Update: bump the tag in the stack + diun/images.yml, then compose pull &amp;&amp; up -d."
+            txt += "Update: bump the tag in the stack + host/image-watch.yml, then compose pull &amp;&amp; up -d."
     await reply(update, txt)
 
 

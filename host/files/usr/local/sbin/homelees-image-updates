@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -I
 """homelees-image-updates — daily check for newer Docker image versions.
 
-Watch list: /opt/stacks/diun/images.yml (name = currently pinned image:tag,
+Watch list: /opt/stacks/host/image-watch.yml (name = currently pinned image:tag,
 include_tags = regex of the same release line). Only registry *tag lists* are
 fetched (no manifest pulls, so no Docker Hub rate-limit trouble).
 
@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 import yaml
 
-IMAGES = Path("/opt/stacks/diun/images.yml")
+IMAGES = Path("/opt/stacks/host/image-watch.yml")
 STACKS = Path("/opt/stacks")
 OUT = Path("/var/lib/homelees-status/images.json")
 DRY = "--dry-run" in sys.argv
@@ -143,7 +143,7 @@ def main():
         if len(ups) > len(fresh):
             lines.append(f"(+{len(ups) - len(fresh)} older pending, see /updates)")
         lines.append("To update: bump the tag in /opt/stacks/<stack> (compose.yaml or .env) and in "
-                     "diun/images.yml, then `sudo docker compose pull && sudo docker compose up -d`, commit.")
+                     "host/image-watch.yml, then `sudo docker compose pull && sudo docker compose up -d`, commit.")
         msg = "\n".join(lines)
         if DRY:
             print(msg)

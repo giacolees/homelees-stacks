@@ -33,7 +33,7 @@ services:
       - HARDCOVER_TOKEN=${HARDCOVER_TOKEN:-}
     ports:
       # LAN + loopback (loopback is used by `tailscale serve`)
-      - "192.168.1.70:8083:8083"
+      - "${LAN_IP:?run host/site-env.sh}:8083:8083"
       - "127.0.0.1:8083:8083"
     volumes:
       - /home/books/cwa:/config
