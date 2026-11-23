@@ -1,0 +1,6 @@
+# Ports from ports.txt that are ALSO forwarded directly on the NetBird IP
+# (http://homelees.netbird.cloud:<port>). Default: none, so NetBird clients must
+# use https://<service>.homelees.party (Caddy + Authelia SSO) and cannot bypass it.
+# Add a port here only for a native client that cannot use the HTTPS name.
+#   <port>  <reason>
+# After editing: sudo /usr/local/sbin/netbird-remote-access.sh

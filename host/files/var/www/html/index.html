@@ -680,9 +680,17 @@
     var host = location.hostname || 'localhost';
 
     // Route every link to the same host the page was reached through.
+    // Over NetBird only 443 (Caddy + Authelia SSO) is open, so use the HTTPS names
+    // there; LAN / Tailscale keep the direct http://<host>:<port> links.
+    var SSO = {3000:'home', 8096:'jellyfin', 5055:'requests', 6767:'bazarr', 8989:'sonarr',
+      7878:'radarr', 9696:'prowlarr', 8080:'torrent', 8081:'sab', 8084:'shelfmark', 8083:'books',
+      4533:'music', 5275:'subsonic', 8082:'cloud', 9090:'cockpit', 9120:'komodo', 8090:'beszel',
+      3333:'ferdium'};
+    var viaNetbird = /(^|\.)netbird\.cloud$|(^|\.)homelees\.party$|^10\.200\./.test(host);
     document.querySelectorAll('a[data-port]').forEach(function (link) {
       var port = link.getAttribute('data-port');
-      link.href = 'http://' + host + ':' + port;
+      link.href = (viaNetbird && SSO[port]) ? 'https://' + SSO[port] + '.homelees.party/'
+                                            : 'http://' + host + ':' + port;
       if (!link.getAttribute('title')) link.title = link.href;
     });
 

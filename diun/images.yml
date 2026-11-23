@@ -1,5 +1,8 @@
-# Images Diun watches for new version tags. Keep in sync with the pinned tags
-# in each stack. include_tags restricts to the same versioning scheme/line.
+# Watch list for /usr/local/sbin/homelees-image-updates (daily 08:45, Telegram
+# message only for NEW versions; results in the 09:00 digest and bot /updates).
+# The Diun container is retired (it alerted on every old tag); the format stays
+# Diun-compatible. name = the CURRENTLY PINNED image:tag (bump it when you update);
+# include_tags = regex of the same release line/scheme.
 - name: lscr.io/linuxserver/sonarr:4.0.20.3014-ls325
   watch_repo: true
   include_tags: ['^\d+\.\d+\.\d+\.\d+-ls\d+$']
@@ -72,9 +75,6 @@
 - name: caddy:2.11.4-alpine
   watch_repo: true
   include_tags: ['^2\.\d+\.\d+-alpine$']
-- name: crazymax/diun:4.33.1
-  watch_repo: true
-  include_tags: ['^\d+\.\d+\.\d+$']
 - name: python:3.13.17-slim-bookworm          # telegram-bot base image (rebuild: compose build --pull)
   watch_repo: true
   include_tags: ['^3\.13\.\d+-slim-bookworm$']

@@ -1,0 +1,160 @@
+#!/usr/bin/python3 -I
+"""homelees-image-updates — daily check for newer Docker image versions.
+
+Watch list: /opt/stacks/diun/images.yml (name = currently pinned image:tag,
+include_tags = regex of the same release line). Only registry *tag lists* are
+fetched (no manifest pulls, so no Docker Hub rate-limit trouble).
+
+For each image it finds the newest matching tag; if it is newer than the
+pinned one it is an update. Writes /var/lib/homelees-status/images.json (for
+the digest and the Telegram bot /updates) and sends ONE Telegram message only
+when an update is new since the last run (or with --notify-all).
+
+Usage: homelees-image-updates [--dry-run] [--notify-all]
+"""
+import json, re, subprocess, sys, urllib.request, urllib.parse, urllib.error
+from datetime import datetime
+from pathlib import Path
+import yaml
+
+IMAGES = Path("/opt/stacks/diun/images.yml")
+STACKS = Path("/opt/stacks")
+OUT = Path("/var/lib/homelees-status/images.json")
+DRY = "--dry-run" in sys.argv
+ALL = "--notify-all" in sys.argv
+UA = {"User-Agent": "homelees-image-updates/1"}
+
+
+def http(url, headers=None):
+    req = urllib.request.Request(url, headers={**UA, **(headers or {})})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.load(r), r.headers
+
+
+def split_image(ref):
+    """'lscr.io/linuxserver/sonarr:4.0' -> (registry, repo, tag)."""
+    ref, _, tag = ref.rpartition(":") if ":" in ref.split("/")[-1] else (ref, "", "latest")
+    parts = ref.split("/")
+    if len(parts) > 1 and ("." in parts[0] or ":" in parts[0]):
+        reg, repo = parts[0], "/".join(parts[1:])
+    else:
+        reg, repo = "docker.io", ref
+    if reg == "docker.io" and "/" not in repo:
+        repo = "library/" + repo
+    return reg, repo, tag
+
+
+def list_tags(reg, repo):
+    api = {"docker.io": "https://registry-1.docker.io"}.get(reg, f"https://{reg}")
+    token_url = {
+        "docker.io": f"https://auth.docker.io/token?service=registry.docker.io&scope=repository:{repo}:pull",
+        "ghcr.io": f"https://ghcr.io/token?scope=repository:{repo}:pull",
+        "lscr.io": f"https://ghcr.io/token?scope=repository:{repo}:pull",
+    }.get(reg)
+    hdr = {}
+    if token_url:
+        tok, _ = http(token_url)
+        hdr["Authorization"] = "Bearer " + (tok.get("token") or tok.get("access_token"))
+    if reg == "lscr.io":          # lscr.io is a redirect to ghcr.io
+        api = "https://ghcr.io"
+    tags, url = [], f"{api}/v2/{repo}/tags/list?n=1000"
+    for _ in range(50):           # pagination via Link header
+        data, h = http(url, hdr)
+        tags += data.get("tags") or []
+        link = h.get("Link")
+        m = link and re.search(r"<([^>]+)>", link)
+        if not m:
+            break
+        url = urllib.parse.urljoin(api, m.group(1))
+    return tags
+
+
+def vkey(tag):
+    """Version sort key: all numbers in the tag (4.0.20.3014-ls325 -> (4,0,20,3014,325))."""
+    return tuple(int(n) for n in re.findall(r"\d+", tag))
+
+
+def go_regex(rx):
+    return rx  # Diun (Go RE2) patterns used here are Python-compatible
+
+
+def stack_of(repo_short):
+    """Which stack pins this image (grep compose files and .env.example)."""
+    hits = set()
+    for f in list(STACKS.glob("*/compose.yaml")) + list(STACKS.glob("*/.env.example")) + list(STACKS.glob("*/Dockerfile")) + list(STACKS.glob("*/*/Dockerfile")):
+        try:
+            if repo_short in f.read_text():
+                hits.add(f.parts[len(STACKS.parts)])
+        except OSError:
+            pass
+    return ", ".join(sorted(hits)) or "?"
+
+
+def main():
+    entries = yaml.safe_load(IMAGES.read_text()) or []
+    prev = {}
+    if OUT.exists():
+        try:
+            prev = {i["image"]: i for i in json.loads(OUT.read_text()).get("images", [])}
+        except Exception:
+            pass
+    seen, results, errors = set(), [], []
+    for e in entries:
+        name = e["name"]
+        if name in seen:
+            continue
+        seen.add(name)
+        reg, repo, cur = split_image(name)
+        short = repo.removeprefix("library/")
+        rx = [re.compile(go_regex(r)) for r in e.get("include_tags") or [r".*"]]
+        try:
+            tags = [t for t in list_tags(reg, repo) if any(r.search(t) for r in rx)]
+        except Exception as ex:   # network/registry hiccup: keep last known result
+            errors.append(f"{short}: {ex}")
+            if name in prev:
+                results.append({**prev[name], "error": str(ex)})
+            continue
+        if not tags:
+            errors.append(f"{short}: no tags match {e.get('include_tags')}")
+            continue
+        newest = max(tags, key=vkey)
+        tracked = any(r.search(cur) for r in rx)       # e.g. :latest / commit-hash pins are not comparable
+        if tracked:
+            update = vkey(newest) > vkey(cur)
+        else:                                          # compare with last seen newest instead
+            base = prev.get(name, {}).get("newest", newest)
+            update = vkey(newest) > vkey(base) or prev.get(name, {}).get("update", False)
+        major = tracked and update and vkey(newest)[:1] != vkey(cur)[:1]
+        results.append({"image": name, "repo": short, "current": cur, "newest": newest,
+                        "update": bool(update), "major": bool(major), "comparable": tracked,
+                        "stack": stack_of(short.split("/")[-1])})
+
+    ups = [r for r in results if r["update"]]
+    old = {(i["image"], i["newest"]) for i in prev.values() if i.get("update")}
+    fresh = ups if ALL else [r for r in ups if (r["image"], r["newest"]) not in old]
+    doc = {"time": datetime.now().astimezone().isoformat(timespec="seconds"),
+           "updates": len(ups), "images": results, "errors": errors}
+
+    if fresh:
+        lines = ["⬆️ New Docker image versions"]
+        for r in sorted(fresh, key=lambda r: r["stack"]):
+            warn = "  ⚠️ MAJOR, read release notes" if r.get("major") else ""
+            lines.append(f"• {r['repo'].split('/')[-1]} ({r['stack']}): {r['current']} → {r['newest']}{warn}")
+        if len(ups) > len(fresh):
+            lines.append(f"(+{len(ups) - len(fresh)} older pending, see /updates)")
+        lines.append("To update: bump the tag in /opt/stacks/<stack> (compose.yaml or .env) and in "
+                     "diun/images.yml, then `sudo docker compose pull && sudo docker compose up -d`, commit.")
+        msg = "\n".join(lines)
+        if DRY:
+            print(msg)
+        else:
+            subprocess.run(["/usr/local/sbin/tg-notify", msg], check=False)
+    if DRY:
+        print(json.dumps(doc, indent=1))
+        return
+    OUT.write_text(json.dumps(doc, indent=1))
+    OUT.chmod(0o644)
+
+
+if __name__ == "__main__":
+    main()

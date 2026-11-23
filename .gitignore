@@ -52,3 +52,4 @@ downloads/config/gluetun/*
 
 # Komodo generated admin credentials
 komodo/.generated-credentials
+__pycache__/

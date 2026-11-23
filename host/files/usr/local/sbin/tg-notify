@@ -7,8 +7,12 @@ logger -t tg-notify -- "$msg"
 [ -r /etc/homelees/telegram.env ] || exit 0
 . /etc/homelees/telegram.env
 [ -n "${TG_TOKEN:-}" ] && [ -n "${TG_CHAT_ID:-}" ] || exit 0
-curl -fsS -m 15 -o /dev/null \
-  --data-urlencode "chat_id=${TG_CHAT_ID}" \
-  --data-urlencode "text=🖥 homelees: ${msg}" \
-  --data-urlencode "disable_web_page_preview=true" \
-  "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" || logger -t tg-notify "send failed"
+for try in 1 2 3; do    # retry: network can be briefly down (e.g. during backups / VPN restarts)
+  curl -fsS -m 15 -o /dev/null \
+    --data-urlencode "chat_id=${TG_CHAT_ID}" \
+    --data-urlencode "text=🖥 homelees: ${msg}" \
+    --data-urlencode "disable_web_page_preview=true" \
+    "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" && exit 0
+  sleep $((try * 20))
+done
+logger -t tg-notify "send failed after 3 attempts"

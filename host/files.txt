@@ -44,3 +44,6 @@
 /etc/systemd/system/netbird-forward.target
 /usr/local/sbin/netbird-remote-access.sh
 /etc/cockpit/cockpit.conf
+/usr/local/sbin/homelees-image-updates
+/etc/systemd/system/homelees-image-updates.service
+/etc/systemd/system/homelees-image-updates.timer

@@ -1,0 +1,9 @@
+[Unit]
+Description=homelees: check registries for newer pinned Docker image versions (Telegram on new ones)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelees-image-updates
+OnFailure=notify-failure@%n.service

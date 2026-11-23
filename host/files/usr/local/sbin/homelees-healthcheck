@@ -33,8 +33,10 @@ for f in /sys/fs/ext4/*/errors_count; do
 done
 
 # 5. Failed systemd units
-failed=$(systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
-[ -n "$failed" ] && add "failed systemd units: $failed"
+# one line per unit, so a second unit failing doesn't "resolve" the first one
+for u in $(systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}'); do
+    add "systemd unit failed: $u (journalctl -u $u)"
+done
 
 # 6. Containers: unhealthy, restarting, or stopped despite a restart policy
 while IFS='|' read -r name state health policy; do

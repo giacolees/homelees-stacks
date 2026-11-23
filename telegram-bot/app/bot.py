@@ -206,7 +206,22 @@ async def cmd_updates(update: Update, ctx):
            f"security updates install automatically)\n")
     if u["reboot_needed"]:
         txt += f"🔁 reboot needed: running kernel {u['kernel_running']}, installed {u['kernel_installed']}\n"
-    txt += "Docker images: Diun posts here when new versions are published (daily 09:00)."
+    img = read_json("images.json")
+    if not img:
+        txt += "Docker images: no check yet (homelees-image-updates, daily 08:45)."
+    else:
+        ups = [i for i in img["images"] if i.get("update")]
+        txt += f"\n<b>🐳 Docker images</b> (checked {age(img['time'])})\n"
+        if not ups:
+            txt += "all pinned images are current ✅\n"
+        for i in sorted(ups, key=lambda i: i["stack"]):
+            warn = " ⚠️ major" if i.get("major") else ""
+            txt += (f"• <b>{i['repo'].split('/')[-1]}</b> ({i['stack']}): "
+                    f"<code>{i['current']}</code> → <code>{i['newest']}</code>{warn}\n")
+        if img.get("errors"):
+            txt += f"⚠️ {len(img['errors'])} image(s) could not be checked\n"
+        if ups:
+            txt += "Update: bump the tag in the stack + diun/images.yml, then compose pull &amp;&amp; up -d."
     await reply(update, txt)
 
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Docker image version check (before the 09:00 digest)
+
+[Timer]
+OnCalendar=*-*-* 08:45
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

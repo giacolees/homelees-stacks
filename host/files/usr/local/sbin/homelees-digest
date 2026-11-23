@@ -10,6 +10,7 @@ ctr=$(docker ps -a --format '{{.State}}' | sort | uniq -c | awk '{printf "%s %s,
 b=$(jq -r '"\(.status) at \(.time[11:16]) on \(.time[0:10]), offsite: \(.offsite)"' $S/backup.json 2>/dev/null || echo "no data")
 probs=$(jq -r '.problems[] | "  • " + .' $S/health.json 2>/dev/null)
 upd=$(jq -r '.updates | "\(.apt) apt pending (\(.security) security)" + (if .reboot_needed then ", reboot needed (kernel \(.kernel_installed))" else "" end)' $S/metrics.json 2>/dev/null)
+img=$(jq -r 'if .updates == 0 then "all pinned images current" else "\(.updates) image update(s): " + ([.images[] | select(.update) | .repo | split("/") | last] | join(", ")) + " (/updates)" end' $S/images.json 2>/dev/null || echo "image check: no data yet")
 smart=$(jq -r '.smart | "NVMe \(.nvme.health), wear \(.nvme.wear); HDD \(.hdd.health)"' $S/metrics.json 2>/dev/null)
 msg="☀️ Daily report
 $( [ -z "$probs" ] && echo "✅ No problems" || printf '🔴 Problems:\n%s' "$probs")
@@ -18,6 +19,7 @@ $( [ -z "$probs" ] && echo "✅ No problems" || printf '🔴 Problems:\n%s' "$pr
 💾 backup: ${b}
 🩺 ${smart}
 ⬆️ ${upd}
+🐳 ${img}
 🗄 disks:
 ${disks}"
 /usr/local/sbin/tg-notify "$msg"

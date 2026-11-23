@@ -1050,7 +1050,7 @@ All alerts go to one Telegram chat through `/usr/local/sbin/tg-notify "msg"`
 | `homelees-healthcheck.timer` → `/usr/local/sbin/homelees-healthcheck` | `/mnt/media` mounted, disk usage (85%, 90% for media//tmp), kernel storage I/O errors, ext4 error counters, failed units, unhealthy/stopped/restart-looping containers, backup age/status, low memory, VPN up. Alerts only on **change** (new problem / resolved). State: `/var/lib/homelees-status/health.json` | every 10 min |
 | `smartmontools` (`/etc/smartd.conf`) → `smartd-notify` | NVMe SMART + temperature, self-tests (short Sun 03:00, long 1st 04:00). The Seagate One Touch Hub USB enclosure does **not** pass SMART through, so the HDD is covered by the kernel-error/ext4 checks above instead. | continuous |
 | `homelees-backup` | failure, or offsite not configured | nightly |
-| Diun (`/opt/stacks/diun`) | new version tags for every pinned image | daily 09:00 |
+| `homelees-image-updates.timer` → `/usr/local/sbin/homelees-image-updates` | newer version of every pinned image (watch list `diun/images.yml`; only tag lists are fetched, no manifest pulls). **One** Telegram message, only for versions not reported before: `image (stack): current → newest`, `⚠️ MAJOR` on a major-version jump. Result `/var/lib/homelees-status/images.json` → 09:00 digest line and bot `/updates`. Re-send the full list: `sudo homelees-image-updates --notify-all` | daily 08:45 |
 | `docker-cleanup.timer` | prunes images unused for >7 days + build cache >2 GB | monthly |
 
 `vm.swappiness=10` (`/etc/sysctl.d/90-homelees.conf`). The 1 GB swap fills
@@ -1060,7 +1060,11 @@ with cold pages of long-running daemons; that is harmless — watch
 ### Updating an image
 
 Every image is pinned to an explicit version (or digest for gluetun).
-Diun reports new tags. To upgrade:
+`homelees-image-updates` reports new versions (Telegram / bot `/updates`). The
+Diun container was retired on 2026-11-23: with `watch_repo` it alerted on every
+*old* tag of each repo (≈2000 messages/day) and hit Docker Hub rate limits;
+`diun/images.yml` stays as the watch list (`name` = the pinned tag, `include_tags`
+= regex of the release line). To upgrade:
 
 ```bash
 cd /opt/stacks/<stack>
@@ -1080,7 +1084,8 @@ admin chat (`TG_CHAT_ID`; others are ignored and logged).
   `/vpn`, `/updates`, `/help`.
 - Push alerts come from the host, not the bot: `tg-notify` (health check on
   change, backup failures, SMART, any failed homelees systemd unit via
-  `notify-failure@.service` `OnFailure=` drop-ins), Diun (image updates), and
+  `notify-failure@.service` `OnFailure=` drop-ins), `homelees-image-updates`
+  (new Docker image versions, 08:45), and
   `homelees-digest.timer` (daily report at 09:00).
 - Built locally (`Dockerfile`, `app/bot.py`; base `python:3.13.17-slim-bookworm`,
   `python-telegram-bot==22.8`), image `homelees/telegram-bot:1.0.0`.
@@ -1089,9 +1094,9 @@ admin chat (`TG_CHAT_ID`; others are ignored and logged).
   comes from `/var/lib/homelees-status/*.json` (read-only mount), written by
   `homelees-healthcheck` and `homelees-backup`. Container is read-only, non-root,
   all capabilities dropped, 128 MB limit. No published ports (long polling).
-- Secrets: `.env` here, `diun/.env`, and `/etc/homelees/telegram.env` (all 0600).
-  **Rotate the token**: `/revoke` in @BotFather, then update the three files and
-  `sudo docker compose up -d` in `telegram-bot/` and `diun/`.
+- Secrets: `.env` here and `/etc/homelees/telegram.env` (both 0600; `diun/.env`
+  is unused since Diun was retired). **Rotate the token**: `/revoke` in
+  @BotFather, then update both files and `sudo docker compose up -d` here.
 
 ```bash
 cd /opt/stacks/telegram-bot
@@ -1116,6 +1121,12 @@ sudo docker compose logs -f bot
 
 ## SSO & HTTPS (`/opt/stacks/sso`) — https://\<service\>.homelees.party
 
+- **NetBird = HTTPS only (2026-11-23)**: over NetBird only `:443` (Caddy) is
+  open, so `http://homelees.netbird.cloud:<port>` no longer bypasses Authelia.
+  `netbird-remote-access.sh` forwards only ports listed in
+  `host/netbird-direct.txt` (empty; add one only for a native client that can't
+  use the HTTPS name). The landing page links to the HTTPS names when opened
+  over NetBird. LAN and Tailscale keep the direct `:port` URLs.
 - **DNS**: Cloudflare zone `homelees.party`, one record `*.homelees.party A
   10.200.82.85` (the server's **NetBird** IP; DNS-only, not proxied). Names work
   on every NetBird device; nothing is reachable from the internet. Cloudflare API
@@ -1168,6 +1179,7 @@ loaded via `X_AUTHELIA_CONFIG_FILTERS=template`; plaintext client secrets in
 
 | App | Setup | Account mapping |
 | :--- | :--- | :--- |
-| Nextcloud | app `user_oidc`, provider "Authelia" (`occ user_oidc:provider`), PKCE, `allow_local_remote_servers=true` (auth host is a private IP) | `preferred_username` → existing user (soft auto-provision); password login still available |
-| Komodo | `KOMODO_OIDC_*` in `komodo/.env`, `KOMODO_HOST=https://komodo.homelees.party`, `KOMODO_OIDC_USE_FULL_EMAIL=true` | new user named by email; created **disabled** → enable + admin in Komodo (Settings → Users) |
-| Beszel | PocketBase: `/_/` → Collections → users → Options → OAuth2 → OpenID Connect (client `beszel`) | by email (user email set to the Authelia email) |
+| Nextcloud | app `user_oidc`, provider "Authelia" (`occ user_oidc:provider`), PKCE, `allow_local_remote_servers=true` (auth host is a private IP). **Auto-redirect** to Authelia (`user_oidc allow_multiple_user_backends=0`, 2026-11-23); local/admin password login: `https://cloud.homelees.party/login?direct=1` | `preferred_username` → existing user (soft auto-provision) |
+| Komodo | `KOMODO_OIDC_*` in `komodo/.env`, `KOMODO_HOST=https://komodo.homelees.party`, `KOMODO_OIDC_USE_FULL_EMAIL=true`. Sign-up only via OIDC (`KOMODO_DISABLE_LOCAL_USER_REGISTRATION=true`, `KOMODO_DISABLE_OIDC_USER_REGISTRATION=false`, `KOMODO_ENABLE_NEW_USERS=true`; Authelia only knows our users). `KOMODO_OIDC_AUTO_REDIRECT=true` once the OIDC user is admin | new user named by email → promote to admin (Settings → Users, as local `admin`) |
+| Beszel | PocketBase `users` collection → OAuth2 provider "Authelia" (`oidc`, client `beszel`); `APP_URL=https://beszel.homelees.party`. Password login kept as fallback | by email (user email set to the Authelia email) |
+| Jellyfin, Seerr, Ferdium, Octo-Fiesta | no OIDC (Seerr v3.4 has none; Seerr logs in with Jellyfin accounts; Ferdium/Octo-Fiesta are API servers for native clients) | own login |
