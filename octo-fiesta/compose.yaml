@@ -31,7 +31,7 @@ x-logging: &logging
 
 services:
   octo-fiesta:
-    image: ghcr.io/v1ck3s/octo-fiesta:${OCTO_FIESTA_TAG}
+    image: ghcr.io/giacolees/octo-fiesta:${OCTO_FIESTA_TAG}
     container_name: octo-fiesta
     restart: unless-stopped
     logging: *logging
@@ -52,6 +52,7 @@ services:
       Subsonic__AdminPassword: ${SUBSONIC_ADMIN_PASSWORD:-}
       # Deezer | Qobuz | Tidal | Yandex | SquidWTF (deprecated)
       Subsonic__MusicService: ${MUSIC_SERVICE}
+      Subsonic__EnableDeezerRadio: "true"
       # Permanent (written into the library) | Cache (temporary, auto-cleanup)
       Subsonic__StorageMode: ${STORAGE_MODE}
       # Track (only the requested track) | Album (whole album when a track plays)
