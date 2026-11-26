@@ -58,18 +58,22 @@ sudo docker compose pull && sudo docker compose up -d   # update
 ### Octo-Fiesta
 
 `V1ck3s/octo-fiesta` is a Subsonic API proxy that, when a requested track is
-missing from Navidrome, fetches it
-from Deezer, tags it, and writes it into the library so Navidrome indexes it as
-a normal song. No radio/mixes/YouTube — it only fills library gaps.
+missing from Navidrome, fetches it from Deezer, tags it, and writes it into the
+library so Navidrome indexes it as a normal song. We run a forked build
+(`giacolees/octo-fiesta`, branch `deezer-radio`) that adds Deezer artist-radio
+tracks to JSON song and artist mixes (`Subsonic__EnableDeezerRadio=true`).
 
 - URL (LAN): http://192.168.1.70:5275
 - URL (HTTPS, LAN + NetBird): `https://subsonic.homelees.party`
-- Image (pinned via `OCTO_FIESTA_TAG=b6a48b8` in `.env` — GHCR only publishes
-  `latest`, `dev` and commit-SHA tags, so a SHA is the only way to pin):
-  - `ghcr.io/v1ck3s/octo-fiesta:b6a48b8` (v0.11)
+- Image (pinned via `OCTO_FIESTA_TAG=v0.11-deezer-radio` in `.env`, built by
+  GitHub Actions on `giacolees/octo-fiesta` and published to GHCR):
+  - `ghcr.io/giacolees/octo-fiesta:v0.11-deezer-radio` (upstream `v0.11` + Deezer radio patch)
+  - `host/image-watch.yml` continues watching upstream `ghcr.io/v1ck3s/octo-fiesta`
+    so `homelees-image-updates` alerts on new upstream releases.
 - Storage (all on NVMe SSD `/home`):
   - Shared music library (`:rw`, same `/data` path Navidrome indexes): `/home/navidrome/music` -> `/data`
   - App config / future Tidal token store: `/home/octo-fiesta/config` -> `/config`
+  - Fork source checkout (backed up with `/home/octo-fiesta`, pushes via repo-scoped deploy key `github-octo-fiesta`): `/home/octo-fiesta/src`
 - Key settings in `.env`:
   - `MUSIC_SERVICE=Deezer`, `DEEZER_QUALITY=FLAC` (needs `DEEZER_ARL`)
   - `STORAGE_MODE=Permanent` (tracks land in the library permanently)
@@ -99,4 +103,14 @@ sudo docker compose logs -f --tail=100
 sudo docker compose pull && sudo docker compose up -d   # update
 # Tidal only: interactive OAuth login, tokens persist in /home/octo-fiesta/config
 sudo docker compose run --rm octo-fiesta --tidal-login
+
+# Rebase the Deezer radio patch onto a new upstream release (e.g. v0.12):
+cd /home/octo-fiesta/src
+git fetch upstream --tags
+git checkout deezer-radio
+git rebase v0.12
+git tag v0.12-deezer-radio
+git push origin deezer-radio --force-with-lease
+git push origin v0.12-deezer-radio   # triggers GitHub Actions -> GHCR
+# Then bump OCTO_FIESTA_TAG in .env/.env.example (and host/image-watch.yml) and pull + up -d.
 ```
